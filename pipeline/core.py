@@ -13,6 +13,9 @@ with open(PIPELINE_DIR / "configs" / "config.yaml", "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
 
 # CONFIGS: FOLIUM
+TARGET_PLACE_NAME = cfg["aoi"].get("name", "Manila, Philippines")
+TARGET_AREA_NAME = cfg["aoi"].get("name", "Manila")
+TARGET_ABBR = cfg["aoi"].get("abbr", "mnl")
 STARTING_LAT = cfg["folium"].get("starting_lat", 0)
 STARTING_LONG = cfg["folium"].get("starting_long", 0)
 ZOOM_START = cfg["folium"].get("zoom_start", 12)
@@ -27,12 +30,12 @@ print(f"Starting Position: ({STARTING_LAT}, {STARTING_LONG}) | Zoom Start: {ZOOM
 
 def main():
     '''
-        Target Area: Quezon City, Philippines
+        Target Place: Manila, Philippines
         Data: Street Network (Driving)
         Source: OpenStreetMap
     '''
 
-    G = ox.graph_from_place("Quezon City, Philippines", network_type="drive", simplify=True)
+    G = ox.graph_from_place(TARGET_PLACE_NAME, network_type="drive", simplify=True)
     nodes, edges = ox.graph_to_gdfs(G)
 
     nodes_wgs = nodes.to_crs(4326).reset_index() # CRS = WGS84
@@ -43,7 +46,7 @@ def main():
 
     folium.GeoJson(
         edges_wgs.to_json(),
-        name="Quezon City Streets",
+        name=f"{TARGET_AREA_NAME} Streets",
         tooltip=folium.features.GeoJsonTooltip(fields=["name", "highway", "length"])
     ).add_to(m)
 
@@ -57,19 +60,21 @@ def main():
     # DATA EXPORT
     m_outdir = OUTPUT_DIR / "maps"
     m_outdir.mkdir(parents=True, exist_ok=True)
-    m.save(m_outdir / "qc_street_network.html")
+    m.save(m_outdir / f"{TARGET_ABBR}_street_network.html")
 
-    _save_nodes_edges_to_csv(nodes_wgs, edges_wgs, OUTPUT_DIR)
+    _save_nodes_edges_to_csv(nodes=nodes_wgs, edges=edges_wgs, outdir=OUTPUT_DIR, target_name=TARGET_ABBR)
 
-def _save_nodes_edges_to_csv(nodes, edges, outdir: Path):
-    target = outdir / "qc_nodes_edges"
+#  ------------- UTILITY FUNCTIONS -------------
+
+def _save_nodes_edges_to_csv(nodes, edges, outdir: Path, target_name: str):
+    target = outdir / f"{target_name}_nodes_edges"
     target.mkdir(parents=True, exist_ok=True)    
 
     # NODES → CSV
     nodes_out = nodes.reset_index()
     nodes_out["geometry_wkt"] = nodes_out.geometry.to_wkt()
     nodes_out = nodes_out.drop(columns=["geometry"])
-    nodes_out.to_csv(target / "qc_nodes.csv", index=False)
+    nodes_out.to_csv(target / f"{target_name}_nodes.csv", index=False)
 
     #EDGES → CSV
     edges_out = edges.reset_index()
@@ -79,7 +84,9 @@ def _save_nodes_edges_to_csv(nodes, edges, outdir: Path):
 
     edges_out["geometry_wkt"] = edges_out.geometry.to_wkt()
     edges_out = edges_out.drop(columns=["geometry"])
-    edges_out.to_csv(target / "qc_edges.csv", index=False)
+    edges_out.to_csv(target / f"{target_name}_edges.csv", index=False)
+
+# -----------------------
 
 if __name__ == "__main__":
     main()
