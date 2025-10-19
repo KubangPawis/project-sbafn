@@ -66,9 +66,8 @@ def get_mapillary_images(session: requests.Session,
                         cell_overlap_m: int = 100,
                         fields: str = "id,width,height,camera_type,creator_username,captured_at,thumb_1024_url,thumb_2048_url,computed_geometry"):
     """
-    Fetch up to `soft_limit` images within bbox (dict with west/south/east/north).
-    Actual total number of images returned may be MORE than tbe `soft_limit`.
-    Uses cursor-based pagination via `paging.cursors.after`.
+    Iterate over the general bbox (Manila, Philippines) in smaller cells to fetch Mapillary images.
+    Fetch `per_cell_limit` images for each cell (dict with west/south/east/north).
     Returns: list[dict] of image metadata.
     """
     results = []
