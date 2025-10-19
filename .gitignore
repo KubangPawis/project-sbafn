@@ -3,4 +3,6 @@ __pycache__/
 cache/
 .env
 
-outputs/
+pipeline/outputs/
+data/images/
+data/meta/*local.csv
