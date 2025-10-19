@@ -23,6 +23,9 @@ with open(PIPELINE_DIR / "configs" / "config.yaml", "r", encoding="utf-8") as f:
 # -----------------------
 
 URL = "https://graph.mapillary.com/images"
+FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fields", {})
+FALLBACK_FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fallback_fields", {})
+MANIFEST_REPO_FIELDS = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_fields", {})
 AOI_BBOX = {
     "west": cfg.get("aoi", {}).get("bbox", {}).get("west", 0),
     "south": cfg.get("aoi", {}).get("bbox", {}).get("south", 0),
@@ -63,10 +66,10 @@ def make_session(token: str,
 
 def get_mapillary_images(session: requests.Session,
                         bbox: dict,
+                        fields: str,
                         per_cell_limit: int = 2000,
                         cell_size_m: int = 3000,
-                        cell_overlap_m: int = 100,
-                        fields: str = "id,creator_username,captured_at,camera_type,compass_angle,thumb_1024_url,thumb_2048_url,computed_geometry,width,height"):
+                        cell_overlap_m: int = 100) -> list[dict]:
     """
     Iterate over the general bbox (Manila, Philippines) in smaller cells to fetch Mapillary images.
     Fetch `per_cell_limit` images for each cell (dict with west/south/east/north).
@@ -77,7 +80,7 @@ def get_mapillary_images(session: requests.Session,
 
     base_params = {
         "bbox": f"{bbox['west']},{bbox['south']},{bbox['east']},{bbox['north']}",
-        "fields": fields,
+        "fields": ",".join(fields),
         "limit": per_cell_limit,
     }
 
@@ -92,9 +95,9 @@ def get_mapillary_images(session: requests.Session,
         response = session.get(url, params=params, timeout=getattr(session, "request_timeout", (5, 30)))
 
         if response.status_code == 400 and "Unsupported get request" in response.text:
-            params["fields"] = (
-                "id,creator_username,captured_at,camera_type,compass_angle,thumb_1024_url,thumb_2048_url,geometry,width,height"
-            )
+            
+            # Fallback (if computed_geometry not supported): use geometry field instead
+            params["fields"] = ",".join(FALLBACK_FIELDS)
             response = session.get(url, params=params, timeout=getattr(session, "request_timeout", (5, 30)))
     
         response.raise_for_status()
@@ -129,10 +132,10 @@ def download_thumbnails(items: list[dict],
                         out_dir: str | Path,
                         max_workers: int = 8,
                         sleep_between: float = 0.02,
-                        manifest_csv: str | Path | None = None) -> list[dict]:
+                        manifest_csv: str | Path | None = None):
     """
     Downloads thumbnails to `out_dir`.
-    Returns list of manifest rows: {id,file_path,thumb_kind,creator_username,captured_at,compass_angle,lat,lon,width,height}.
+    Returns list of manifest(metadata) per image record and export them to a csv file.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -232,7 +235,8 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
                     "thumb_kind": kind,
                     "creator_username": img_data.get("creator_username"),
                     "captured_at": img_data.get("captured_at"),
-                    "compass_angle": img_data.get("compass_angle"),
+                    "camera_type": img_data.get("camera_type"),
+                    "sequence_id": img_data.get("sequence_id"),
                     "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
                            if img_data.get("computed_geometry")
                            else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
@@ -258,7 +262,8 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
                 "thumb_kind": kind,
                 "creator_username": img_data.get("creator_username"),
                 "captured_at": img_data.get("captured_at"),
-                "compass_angle": img_data.get("compass_angle"),
+                "camera_type": img_data.get("camera_type"),
+                "sequence_id": img_data.get("sequence_id"),
                 "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
                        if img_data.get("computed_geometry")
                        else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
@@ -278,10 +283,7 @@ def _write_manifest_csv(rows: list[dict], manifest_outdir: Path):
     manifest_outdir.parent.mkdir(parents=True, exist_ok=True)
 
     # Fields for the REPO copy (no file_path)
-    repo_fields = [
-        "id", "thumb_kind", "creator_username", "captured_at",
-        "compass_angle", "lat", "lon", "width", "height"
-    ]
+    repo_fields = MANIFEST_REPO_FIELDS
 
     # Fields for the LOCAL copy (with file_path for annotation tools)
     local_fields = repo_fields + ["file_path"]
@@ -306,7 +308,7 @@ if __name__ == "__main__":
 
     # [IMAGE METADATA FETCH] Get Mapillary image metadata within AOI
     session = make_session(TOKEN, timeout=(5, 30))
-    imgs = get_mapillary_images(session=session, bbox=AOI_BBOX, per_cell_limit=2000, cell_size_m=1000, cell_overlap_m=100)
+    imgs = get_mapillary_images(session=session, bbox=AOI_BBOX, fields=FIELDS, per_cell_limit=2000, cell_size_m=1000, cell_overlap_m=100)
 
     # [IMAGE DOWNLOAD] Download Mapillary images locally
     images_outdir = REPO_ROOT / "data" / "images"

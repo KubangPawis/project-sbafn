@@ -8,6 +8,16 @@ aoi:
     east: 121.029940
     north: 14.642303
 
+mapillary_api:
+  image_retrieval:
+    fields: ["id", "creator_name", "captured_at", "camera_type", "sequence_id", 
+            "thumb_1024_url", "thumb_2048_url", "computed_geometry", "width", "height"]
+    fallback_fields: ["id", "creator_name", "captured_at", "camera_type", "sequence_id", 
+            "thumb_1024_url", "thumb_2048_url", "geometry", "width", "height"]
+  manifest:
+    repo_fields: ["id", "thumb_kind", "creator_username", "captured_at",
+                  "camera_type", "sequence_id",  "lat", "lon", "width", "height"]
+
 folium:
   starting_lat: 14.6462733
   starting_long: 121.0460557
