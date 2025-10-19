@@ -2,6 +2,11 @@ aoi:
   place_name: Manila, Philippines
   area_name: Manila
   abbr: mnl
+  bbox:
+    west: 120.942307
+    south: 14.555838
+    east: 121.029940
+    north: 14.642303
 
 folium:
   starting_lat: 14.6462733
