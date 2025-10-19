@@ -245,7 +245,7 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
                     "creator_username": img_data.get("creator_username"),
                     "captured_at": img_data.get("captured_at"),
                     "camera_type": img_data.get("camera_type"),
-                    "sequence_id": img_data.get("sequence_id"),
+                    "sequence": img_data.get("sequence"),
                     "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
                            if img_data.get("computed_geometry")
                            else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
@@ -272,7 +272,7 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
                 "creator_username": img_data.get("creator_username"),
                 "captured_at": img_data.get("captured_at"),
                 "camera_type": img_data.get("camera_type"),
-                "sequence_id": img_data.get("sequence_id"),
+                "sequence": img_data.get("sequence"),
                 "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
                        if img_data.get("computed_geometry")
                        else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
