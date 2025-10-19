@@ -101,6 +101,7 @@ def get_mapillary_images(session: requests.Session,
         
         cell_data_json = response.json()
         items = cell_data_json.get("data", []) or []
+        print(f"\n[CELL {i+1}] Fetched Images: {len(items)}\n")
 
         # Get unique image ids only + filter for "perspective" camera type
         for i in items:
@@ -120,7 +121,7 @@ def get_mapillary_images(session: requests.Session,
 
         time.sleep(0.2)
 
-    print(f"\nFetched Total Images: {len(results)}\n")
+    print(f"\n[TOTAL] Fetched Images: {len(results)}\n")
     return results
 
 def download_thumbnails(items: list[dict],
