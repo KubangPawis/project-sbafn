@@ -10,6 +10,9 @@ aoi:
 
 mapillary_api:
   image_retrieval:
+    per_cell_limit: 2000
+    cell_size_m: 3000
+    cell_overlap_m: 100
     fields: ["id", "creator_name", "captured_at", "camera_type", "sequence_id", 
             "thumb_1024_url", "thumb_2048_url", "computed_geometry", "width", "height"]
     fallback_fields: ["id", "creator_name", "captured_at", "camera_type", "sequence_id", 

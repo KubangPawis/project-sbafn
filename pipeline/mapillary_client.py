@@ -23,9 +23,18 @@ with open(PIPELINE_DIR / "configs" / "config.yaml", "r", encoding="utf-8") as f:
 # -----------------------
 
 URL = "https://graph.mapillary.com/images"
+
+# CONFIGS: MAPILLARY API - IMAGE RETRIEVAL
 FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fields", {})
 FALLBACK_FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fallback_fields", {})
+PER_CELL_LIMIT = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("per_cell_limit", 2000)
+CELL_SIZE_M = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("cell_size_m", 3000)
+CELL_OVERLAP_M = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("cell_overlap_m", 100)
+
+# CONFIGS: MAPILLARY API - MANIFEST EXPORT
 MANIFEST_REPO_FIELDS = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_fields", {})
+
+# CONFIGS: AOI
 AOI_BBOX = {
     "west": cfg.get("aoi", {}).get("bbox", {}).get("west", 0),
     "south": cfg.get("aoi", {}).get("bbox", {}).get("south", 0),
@@ -308,7 +317,7 @@ if __name__ == "__main__":
 
     # [IMAGE METADATA FETCH] Get Mapillary image metadata within AOI
     session = make_session(TOKEN, timeout=(5, 30))
-    imgs = get_mapillary_images(session=session, bbox=AOI_BBOX, fields=FIELDS, per_cell_limit=2000, cell_size_m=1000, cell_overlap_m=100)
+    imgs = get_mapillary_images(session=session, bbox=AOI_BBOX, fields=FIELDS, per_cell_limit=PER_CELL_LIMIT, cell_size_m=CELL_SIZE_M, cell_overlap_m=CELL_OVERLAP_M)
 
     # [IMAGE DOWNLOAD] Download Mapillary images locally
     images_outdir = REPO_ROOT / "data" / "images"
