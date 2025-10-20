@@ -4,6 +4,8 @@ import osmnx as ox
 import folium
 import yaml
 
+from pipeline.street_define import make_segments, make_corridors
+from pipeline.node_lonlat_export import export_segment_lonlat
 # -----------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +39,28 @@ def main():
 
     G = ox.graph_from_place(TARGET_PLACE_NAME, network_type="drive", simplify=True)
     nodes, edges = ox.graph_to_gdfs(G)
+
+    #SEGMENTS AND CORRIDORDS CREATION FOR INDIV STREETS
+
+    segments = make_segments(edges, split_len_m=30)
+    corridors, segments = make_corridors(segments, merge_dual=False)
+
+    # SAVE LONGITUDE/LATITUDE FOR EACH NODE
+    seg_ll = export_segment_lonlat(
+        segments_gdf=segments,
+        out_csv=OUTPUT_DIR / f"{TARGET_ABBR}_segments_lonlat.csv",
+    )
+
+    # segments / corridors are GeoDataFrames or DataFrames
+    segments = segments.to_crs(4326)
+    corridors = corridors.to_crs(4326)
+    (OUTPUT_DIR / f"{TARGET_ABBR}_segments.geojson").write_text(segments.to_json())
+    (OUTPUT_DIR / f"{TARGET_ABBR}_corridors.geojson").write_text(corridors.to_json())
+    
+    # CSV (for a quick check)
+    segments.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_segments.csv", index=False)
+    corridors.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_corridors.csv", index=False)
+
 
     nodes_wgs = nodes.to_crs(4326).reset_index() # CRS = WGS84
     edges_wgs = edges.to_crs(4326)
