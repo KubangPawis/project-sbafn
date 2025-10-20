@@ -8,6 +8,19 @@ aoi:
     east: 121.029940
     north: 14.642303
 
+mapillary_api:
+  image_retrieval:
+    per_cell_limit: 2000
+    cell_size_m: 3000
+    cell_overlap_m: 100
+    fields: ["id", "captured_at", "camera_type", "sequence", "thumb_1024_url",
+            "thumb_2048_url", "computed_geometry", "width", "height"]
+    fallback_fields: ["id", "captured_at", "camera_type", "sequence", "thumb_1024_url",
+            "thumb_2048_url", "geometry", "width", "height"]
+  manifest:
+    repo_fields: ["id", "thumb_kind", "captured_at", "camera_type",
+                  "sequence", "lat", "lon", "width", "height"]
+
 folium:
   starting_lat: 14.6462733
   starting_long: 121.0460557

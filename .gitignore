@@ -1,6 +1,10 @@
 __pycache__/
 .venv/
+.lsenv/
 cache/
 .env
+
+pipeline/outputs/
+data/images/
+data/meta/*local.csv
 venv
-outputs/
