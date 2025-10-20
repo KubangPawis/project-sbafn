@@ -25,6 +25,7 @@ with open(PIPELINE_DIR / "configs" / "config.yaml", "r", encoding="utf-8") as f:
 URL = "https://graph.mapillary.com/images"
 
 # CONFIGS: MAPILLARY API - IMAGE RETRIEVAL
+RETRIEVED_IMAGES_OUT_DIR = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("out_dir", "data/images/")
 FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fields", {})
 FALLBACK_FIELDS = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("fallback_fields", {})
 PER_CELL_LIMIT = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("per_cell_limit", 2000)
@@ -33,6 +34,9 @@ CELL_OVERLAP_M = cfg.get("mapillary_api", {}).get("image_retrieval", {}).get("ce
 
 # CONFIGS: MAPILLARY API - MANIFEST EXPORT
 MANIFEST_REPO_FIELDS = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_fields", {})
+MANIFEST_OUT_DIR = cfg.get("mapillary_api", {}).get("manifest", {}).get("out_dir", "data/meta/")
+MANIFEST_REPO_NAME = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_manifest_name", "mapillary_manifest.csv")
+MANIFEST_LOCAL_NAME = cfg.get("mapillary_api", {}).get("manifest", {}).get("local_manifest_name", "mapillary_manifest_local.csv")
 
 # CONFIGS: AOI
 AOI_BBOX = {
@@ -139,9 +143,12 @@ def get_mapillary_images(session: requests.Session,
 def download_thumbnails(items: list[dict],
                         session: requests.Session,
                         out_dir: str | Path,
+                        manifest_repo_name: str,
+                        manifest_local_name: str,
                         max_workers: int = 8,
                         sleep_between: float = 0.02,
-                        manifest_csv: str | Path | None = None):
+                        manifest_csv: str | Path | None = None,
+                        ) -> list[dict]:
     """
     Downloads thumbnails to `out_dir`.
     Returns list of manifest(metadata) per image record and export them to a csv file.
@@ -166,7 +173,11 @@ def download_thumbnails(items: list[dict],
 
     # Write manifest csv file for Label Studio
     if manifest_csv:
-        _write_manifest_csv(rows, Path(manifest_csv))
+        _write_manifest_csv(rows=rows, 
+                            manifest_outdir=Path(manifest_csv), 
+                            manifest_repo_name=manifest_repo_name, 
+                            manifest_local_name=manifest_local_name
+                            )
 
     return rows
 
@@ -286,7 +297,7 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
     print(f"[!] Failed to download image {iid}: no working thumbnail")
     return None
 
-def _write_manifest_csv(rows: list[dict], manifest_outdir: Path):
+def _write_manifest_csv(rows: list[dict], manifest_outdir: Path, manifest_repo_name: str, manifest_local_name: str):
     manifest_outdir.parent.mkdir(parents=True, exist_ok=True)
 
     # Fields for the REPO copy (no file_path)
@@ -296,14 +307,14 @@ def _write_manifest_csv(rows: list[dict], manifest_outdir: Path):
     local_fields = repo_fields + ["file_path"]
 
     # [REPO COPY] Tracked for reproducibility purposes
-    with open(manifest_outdir / "mapillary_manifest.csv", "w", newline="", encoding="utf-8") as f:
+    with open(manifest_outdir / manifest_repo_name, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=repo_fields, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k) for k in repo_fields})
 
     # [LOCAL COPY] gitignored; Used for Label Studio import
-    with open(manifest_outdir / "mapillary_manifest_local.csv", "w", newline="", encoding="utf-8") as f:
+    with open(manifest_outdir / manifest_local_name, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=local_fields, extrasaction="ignore")
         w.writeheader()
         for r in rows:
@@ -318,8 +329,19 @@ if __name__ == "__main__":
     imgs = get_mapillary_images(session=session, bbox=AOI_BBOX, fields=FIELDS, per_cell_limit=PER_CELL_LIMIT, cell_size_m=CELL_SIZE_M, cell_overlap_m=CELL_OVERLAP_M)
 
     # [IMAGE DOWNLOAD] Download Mapillary images locally
-    images_outdir = REPO_ROOT / "data" / "images"
-    manifest_outdir = REPO_ROOT / "data" / "meta"
+    images_outdir = REPO_ROOT / RETRIEVED_IMAGES_OUT_DIR
+    manifest_outdir = REPO_ROOT / MANIFEST_OUT_DIR
+    manifest_repo_name = MANIFEST_REPO_NAME
+    manifest_local_name = MANIFEST_LOCAL_NAME
+
     images_outdir.mkdir(parents=True, exist_ok=True)
     manifest_outdir.mkdir(parents=True, exist_ok=True)
-    download_thumbnails(imgs, session, out_dir=images_outdir, max_workers=4, manifest_csv= manifest_outdir)
+
+    download_thumbnails(imgs, 
+                        session, 
+                        out_dir=images_outdir, 
+                        manifest_repo_name=manifest_repo_name, 
+                        manifest_local_name=manifest_local_name, 
+                        max_workers=4, 
+                        manifest_csv= manifest_outdir
+                        )
