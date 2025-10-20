@@ -7,6 +7,7 @@ import yaml
 
 from pipeline.street_define import make_segments, make_corridors
 from pipeline.node_lonlat_export import export_segment_lonlat
+from pipeline.segments_elevation import join_elevation_to_segments
 # -----------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -66,6 +67,21 @@ def main():
     segments.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_segments.csv", index=False)
     corridors.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_corridors.csv", index=False)
 
+    seg_geojson = OUTPUT_DIR / f"{TARGET_ABBR}_segments.geojson"
+    seg_geojson.write_text(segments.to_json(), encoding="utf-8")
+
+    # elevation CSV path
+    elev_csv = OUTPUT_DIR / "manila_city_30m_grid_cityonly.csv"
+    out_csv  = OUTPUT_DIR / f"{TARGET_ABBR}_segments_with_elevation.csv"
+
+    join_elevation_to_segments(
+        segments_path=seg_geojson,
+        elev_csv_path=elev_csv,
+        out_csv_path=out_csv,
+        buf_m=15.0,
+        max_nn_m=60.0,
+    )
+    print(f"[elevation] wrote {out_csv}")
 
     nodes_wgs = nodes.to_crs(4326).reset_index() # CRS = WGS84
     edges_wgs = edges.to_crs(4326)
