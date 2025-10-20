@@ -90,9 +90,12 @@ def main():
     with open(REPO_ROOT / MANIFEST_OUT_DIR / MANIFEST_NAME, "r", encoding="utf-8") as f:
         csv_reader = csv.DictReader(f)
         for row in csv_reader:
-            lat = float(row["lat"])
-            lon = float(row["lon"])
-            folium.CircleMarker(location=(lat, lon), radius=2, color="red", fill=True, fill_opacity=0.8).add_to(m)
+            try:
+                lat = float(row["lat"])
+                lon = float(row["lon"])
+                folium.CircleMarker(location=(lat, lon), radius=2, color="green", fill=True, fill_opacity=0.8).add_to(m)
+            except:
+                pass
 
     # DATA EXPORT
     m_outdir = OUTPUT_DIR / "maps"
