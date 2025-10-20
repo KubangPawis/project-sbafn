@@ -101,6 +101,11 @@ def get_mapillary_images(session: requests.Session,
     cells = _grid_bboxes_by_meters(bbox, cell_m=cell_size_m, overlap_m=cell_overlap_m)
     #cells = cells[:5]  # LIMIT TO FIRST N CELLS FOR TESTING
 
+    # [DIAGNOSTIC INFO] Check if the grid splitting is as expected
+    diag_results = _diag_grid(bbox, cell_size_m)
+    print(f"\n[DIAGNOSIS]\nExpected Cells: {diag_results['expected_cells']}")
+    print("Actual Cells:", len(cells))
+
     for i, cell in enumerate(cells):
         print(f"\nFetching cell {i+1}/{len(cells)}: {cell}")
         params = base_params.copy()
@@ -319,6 +324,28 @@ def _write_manifest_csv(rows: list[dict], manifest_outdir: Path, manifest_repo_n
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k) for k in local_fields})
+
+def _diag_grid(bbox, cell_m):
+    minlon, minlat = bbox["west"], bbox["south"]
+    maxlon, maxlat = bbox["east"], bbox["north"]
+    mid_lat = (minlat + maxlat) / 2.0
+    m_per_deg_lat = 111_320.0
+    m_per_deg_lon = 111_320.0 * math.cos(math.radians(mid_lat))
+    dlat = cell_m / m_per_deg_lat
+    dlon = cell_m / m_per_deg_lon
+    n_rows = math.ceil((maxlat - minlat) / dlat)
+    n_cols = math.ceil((maxlon - minlon) / dlon)
+    res = {
+        "cell_m": cell_m,
+        "AOI_dlat_deg": maxlat - minlat,
+        "AOI_dlon_deg": maxlon - minlon,
+        "step_dlat_deg": dlat,
+        "step_dlon_deg": dlon,
+        "expected_rows": n_rows,
+        "expected_cols": n_cols,
+        "expected_cells": n_rows * n_cols,
+    }
+    return res
 
 #  ---------------------------------------
 
