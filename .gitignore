@@ -7,4 +7,5 @@ cache/
 pipeline/outputs/
 data/images/
 data/meta/*local.csv
+data/*
 venv
