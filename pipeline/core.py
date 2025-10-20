@@ -1,4 +1,5 @@
 from pathlib import Path
+import csv
 
 import osmnx as ox
 import folium
@@ -21,6 +22,10 @@ TARGET_ABBR = cfg["aoi"].get("abbr", "mnl")
 STARTING_LAT = cfg["folium"].get("starting_lat", 0)
 STARTING_LONG = cfg["folium"].get("starting_long", 0)
 ZOOM_START = cfg["folium"].get("zoom_start", 12)
+
+# CONFIGS: MAPILLARY
+MANIFEST_OUT_DIR = cfg.get("mapillary_api", {}).get("manifest", {}).get("out_dir", "data/meta/")
+MANIFEST_NAME = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_manifest_name", "mapillary_manifest.csv")
 
 # CONFIGS: OUTPUT PATHS
 OUTPUT_DIR = PIPELINE_DIR / "outputs"
@@ -80,6 +85,14 @@ def main():
         folium.CircleMarker([y,x], radius=2, color="red", fill=True, fill_opacity=0.8).add_to(m)
 
     folium.LayerControl().add_to(m)
+
+    # [MAPILLARY MANIFEST] Visualize retrieved Mapillary images
+    with open(REPO_ROOT / MANIFEST_OUT_DIR / MANIFEST_NAME, "r", encoding="utf-8") as f:
+        csv_reader = csv.DictReader(f)
+        for row in csv_reader:
+            lat = float(row["lat"])
+            lon = float(row["lon"])
+            folium.CircleMarker(location=(lat, lon), radius=2, color="red", fill=True, fill_opacity=0.8).add_to(m)
 
     # DATA EXPORT
     m_outdir = OUTPUT_DIR / "maps"
