@@ -10,6 +10,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import requests
 import yaml
+import cv2
+import numpy as np
 
 # -----------------------
 
@@ -94,7 +96,7 @@ def get_mapillary_images(session: requests.Session,
     base_params = {
         "bbox": f"{bbox['west']},{bbox['south']},{bbox['east']},{bbox['north']}",
         "fields": ",".join(fields),
-        "limit": per_cell_limit,
+        #"limit": per_cell_limit,
     }
 
     url = URL
@@ -130,11 +132,6 @@ def get_mapillary_images(session: requests.Session,
             # Unique ID check
             iid = i.get("id")
             if (not iid) or (iid in unique_ids):
-                continue
-
-            # Camera type check
-            camera_type = (i.get("camera_type") or "").strip().lower()
-            if camera_type != "perspective":
                 continue
 
             unique_ids.add(iid)
@@ -173,7 +170,13 @@ def download_thumbnails(items: list[dict],
         futures = [ex.submit(task, it) for it in items]
         for fut in as_completed(futures):
             row = fut.result()
-            if row:
+            if not row:
+                continue
+            # PANORAMA
+            if isinstance(row, list):
+                rows.extend(row)
+            # PERSPECTIVE / FISHEYE
+            else:
                 rows.append(row)
 
     # Write manifest csv file for Label Studio
@@ -234,42 +237,121 @@ def _pick_ext(resp: requests.Response, url: str) -> str:
         return ext
     return ".jpg"
 
-def _download_one(session: requests.Session, img_data: dict, out_dir: Path, timeout=(5, 60)) -> dict | None:
+def _download_one(session: requests.Session, img_data: dict, out_dir: Path, timeout=(5, 60)) -> dict | list[dict] | None:
     iid = img_data.get("id")
     if not iid:
         return None
 
-    # Build download candidates in priority order (2048 → 1024)
+    camera_type = (img_data.get("camera_type") or "").strip().lower()
+    is_pano = bool(img_data.get("is_pano"))
+    is_spherical = is_pano or camera_type in {"spherical", "equirectangular"}
+
+    # Common metadata helpers
+    def _row(file_path: Path, extra: dict) -> dict:
+        lat = (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1] \
+              if img_data.get("computed_geometry") \
+              else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1]
+        lon = (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[0] \
+              if img_data.get("computed_geometry") \
+              else (img_data.get("geometry") or {}).get("coordinates", [None, None])[0]
+        base = {
+            "id": iid,
+            "thumb_kind": extra.get("thumb_kind"),
+            "file_path": str(file_path),
+            "captured_at": img_data.get("captured_at"),
+            "camera_type": img_data.get("camera_type"),
+            "sequence": img_data.get("sequence"),
+            "lat": lat, 
+            "lon": lon,
+            "width": img_data.get("width"),
+            "height": img_data.get("height"),
+            "face": (extra.get("face") or ""),
+            "yaw_deg": (extra.get("yaw_deg") or ""),
+            "pitch_deg": (extra.get("pitch_deg") or ""),
+            "hfov_deg": (extra.get("hfov_deg") or ""),
+        }
+        base.update(extra)
+        return base
+    
     thumb_2048 = img_data.get("thumb_2048_url")
     thumb_1024 = img_data.get("thumb_1024_url")
-    candidates = [u for u in (thumb_2048, thumb_1024) if u]
+    
 
-    for url in candidates:
+    # -------- 360 PANORAMAS: render left/forward/right ----------
+    if is_spherical:
+        url = thumb_2048 or thumb_1024
+        if not url:
+            print(f"[!] Pano {iid} missing thumb URL")
+            return None
+
         try:
+            kind = "2048" if (url == thumb_2048) else "1024"
             resp = session.get(url, stream=True, timeout=timeout)
             resp.raise_for_status()
+            data = np.frombuffer(resp.content, dtype=np.uint8)
+            pano = cv2.imdecode(data, cv2.IMREAD_COLOR)
+            resp.close()
+        finally:
+            try: resp.close()
+            except: pass
+
+        if pano is None:
+            print(f"[!] Failed to decode pano {iid}")
+            return None
+
+        # Heading (degrees). If missing, assume 0.
+        yaw0 = img_data.get("compass_angle")
+        try:
+            yaw0 = float(yaw0) if yaw0 is not None else 0.0
+        except (ValueError, TypeError):
+            yaw0 = 0.0
+
+        faces = [
+            ("left",    yaw0 - 90.0),
+            ("forward", yaw0 + 0.0),
+            ("right",   yaw0 + 90.0),
+        ]
+        hfov = 80.0
+        pitch = -10.0
+        out_w, out_h = 1024, 1024
+
+        rows: list[dict] = []
+        for face_name, yaw in faces:
+            try:
+                view = _equirect_to_perspective(pano, yaw_deg=yaw, pitch_deg=pitch, hfov_deg=hfov, out_w=out_w, out_h=out_h)
+                out_path = out_dir / f"{iid}_{face_name}.jpg"
+                cv2.imwrite(str(out_path), view)
+                rows.append(_row(out_path, {
+                    "thumb_kind": kind,
+                    "face": face_name,
+                    "yaw_deg": yaw,
+                    "pitch_deg": pitch,
+                    "hfov_deg": hfov,
+                    "width": out_w,
+                    "height": out_h
+                }))
+            except Exception as e:
+                print(f"[!] Failed pano face {face_name} for {iid}: {e}")
+                continue
+
+        if not rows:
+            return None
+        return rows
+
+    # -------- PERSPECTIVE ----------
+    
+    candidates = [u for u in (thumb_2048, thumb_1024) if u]
+    for url in candidates:
+        try:
+            resp = session.get(url, timeout=timeout)
+            resp.raise_for_status()
             ext = _pick_ext(resp, url)
-            kind = "2048" if url is thumb_2048 else "1024"
+            kind = "2048" if (url == thumb_2048) else "1024"
             out_path = out_dir / f"{iid}_{kind}{ext}"
 
             if out_path.exists():
                 resp.close()
-                return {
-                    "id": iid,
-                    "file_path": str(out_path),
-                    "thumb_kind": kind,
-                    "captured_at": img_data.get("captured_at"),
-                    "camera_type": img_data.get("camera_type"),
-                    "sequence": img_data.get("sequence"),
-                    "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
-                           if img_data.get("computed_geometry")
-                           else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
-                    "lon": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[0]
-                           if img_data.get("computed_geometry")
-                           else (img_data.get("geometry") or {}).get("coordinates", [None, None])[0],
-                    "width": img_data.get("width"),
-                    "height": img_data.get("height"),
-                }
+                return _row(out_path, {"thumb_kind": kind})
 
             tmp = out_path.with_suffix(out_path.suffix + ".part")
             tmp.parent.mkdir(parents=True, exist_ok=True)
@@ -280,22 +362,7 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
             tmp.replace(out_path)
             resp.close()
 
-            return {
-                "id": iid,
-                "file_path": str(out_path),
-                "thumb_kind": kind,
-                "captured_at": img_data.get("captured_at"),
-                "camera_type": img_data.get("camera_type"),
-                "sequence": img_data.get("sequence"),
-                "lat": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[1]
-                       if img_data.get("computed_geometry")
-                       else (img_data.get("geometry") or {}).get("coordinates", [None, None])[1],
-                "lon": (img_data.get("computed_geometry") or {}).get("coordinates", [None, None])[0]
-                       if img_data.get("computed_geometry")
-                       else (img_data.get("geometry") or {}).get("coordinates", [None, None])[0],
-                "width": img_data.get("width"),
-                "height": img_data.get("height"),
-            }
+            return _row(out_path, {"thumb_kind": kind})
         except requests.RequestException:
             continue
 
@@ -346,6 +413,53 @@ def _diag_grid(bbox, cell_m):
         "expected_cells": n_rows * n_cols,
     }
     return res
+
+def _equirect_to_perspective(pano_bgr, yaw_deg=0.0, pitch_deg=0.0, hfov_deg=90.0, out_w=1024, out_h=1024):
+    """
+    pano_bgr: HxWx3 equirectangular image (BGR)
+    yaw_deg, pitch_deg: camera orientation (degrees), yaw: +CW from North if using compass; here we treat +yaw as to the right
+    hfov_deg: horizontal field of view of virtual camera
+    out_w, out_h: output size
+    """
+    H, W = pano_bgr.shape[:2]
+    hfov = math.radians(hfov_deg)
+    f = 0.5 * out_w / math.tan(hfov * 0.5)
+    cx, cy = (out_w - 1) / 2.0, (out_h - 1) / 2.0
+
+    # Pixel grid in camera coordinates (z forward)
+    x = (np.arange(out_w) - cx) / f
+    y = -(np.arange(out_h) - cy) / f
+    xx, yy = np.meshgrid(x, y)
+    zz = np.ones_like(xx)
+
+    # Normalize camera rays
+    inv_norm = 1.0 / np.sqrt(xx*xx + yy*yy + zz*zz)
+    xr, yr, zr = xx*inv_norm, yy*inv_norm, zz*inv_norm
+
+    # Rotation (yaw about +Y, pitch about +X) – right-handed, z forward
+    yaw, pitch = math.radians(yaw_deg), math.radians(pitch_deg)
+    cyaw, syaw = math.cos(yaw), math.sin(yaw)
+    cpit, spit = math.cos(pitch), math.sin(pitch)
+
+    # R = R_yaw * R_pitch
+    x1 =  cyaw * xr + 0 * yr + syaw * zr
+    y1 =  spit * (syaw * xr) + cpit * yr - spit * (cyaw * zr)
+    z1 = -cpit * (syaw * xr) + spit * yr + cpit * (cyaw * zr)
+
+    # to spherical (θ in [-π, π], φ in [-π/2, π/2])
+    theta = np.arctan2(x1, z1)          # yaw
+    phi   = np.arcsin(np.clip(y1, -1, 1))  # pitch
+
+    # Map to pano coords
+    u = (theta / (2*np.pi) + 0.5) * W
+    v = (0.5 - phi / np.pi) * H
+
+    # Remap – wrap horizontally, clamp vertically
+    map_x = u.astype(np.float32)
+    map_y = np.clip(v, 0, H-1).astype(np.float32)
+    view = cv2.remap(pano_bgr, map_x, map_y, interpolation=cv2.INTER_LINEAR,
+                     borderMode=cv2.BORDER_WRAP)
+    return view
 
 #  ---------------------------------------
 
