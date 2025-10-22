@@ -1,0 +1,74 @@
+[
+  {
+    "id": "intro",
+    "title": "The Problem in the Streets",
+    "bodyMd": "Metro Manila faces recurring flood events that traditional watershed-scale maps fail to capture. **Street-level** assessment reveals vulnerability patterns invisible at broader scales.",
+    "camera": {
+      "lat": 14.5995,
+      "lng": 120.9842,
+      "zoom": 12.5,
+      "bearing": 20,
+      "pitch": 30,
+      "durationMs": 1200
+    },
+    "media": {
+      "image": null,
+      "caption": null
+    }
+  },
+  {
+    "id": "gap",
+    "title": "Where Current Maps Fall Short",
+    "bodyMd": "Barangay-level aggregation can hide micro-topographic traps. A single barangay can contain both high-ground safe zones and low-lying segments.",
+    "camera": {
+      "lat": 14.62,
+      "lng": 121.001,
+      "zoom": 13.0,
+      "bearing": 0,
+      "pitch": 0,
+      "durationMs": 1200
+    }
+  },
+  {
+    "id": "segments",
+    "title": "Street-Level Lens (Segments)",
+    "bodyMd": "Each road segment is scored for flood proneness based on elevation, drainage condition, and canal proximity. Colors indicate **Low / Medium / High** risk.",
+    "camera": {
+      "lat": 14.61,
+      "lng": 121.0,
+      "zoom": 14.0
+    }
+  },
+  {
+    "id": "drivers",
+    "title": "What Drives Flood Risk",
+    "bodyMd": "Risk combines multiple signals. The *Explainability* panel highlights **Top Contributors** and their weights for the selected segment.",
+    "camera": {
+      "lat": 14.606,
+      "lng": 121.015,
+      "zoom": 14.3,
+      "bearing": 15,
+      "pitch": 25
+    }
+  },
+  {
+    "id": "pilots",
+    "title": "Pilot Focus Areas",
+    "bodyMd": "We prioritize corridors with repeated flood complaints and known drainage issues for field validation and maintenance planning.",
+    "camera": {
+      "lat": 14.57,
+      "lng": 121.03,
+      "zoom": 13.4
+    }
+  },
+  {
+    "id": "next",
+    "title": "What\u2019s Next",
+    "bodyMd": "Coming up: flood-aware routing, citizen feedback hooks, and integration with LGU planning workflows.",
+    "camera": {
+      "lat": 14.5995,
+      "lng": 120.9842,
+      "zoom": 12.6
+    }
+  }
+]

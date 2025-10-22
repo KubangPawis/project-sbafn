@@ -1,0 +1,118 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "segment_id": "SEG-10234",
+        "barangay": "San Antonio",
+        "city": "Quezon City",
+        "risk_band": "high",
+        "risk_score": 78,
+        "rain_threshold_mmhr": 45,
+        "drivers_top": [
+          "Low Elevation",
+          "Canal Proximity",
+          "Poor Drainage"
+        ],
+        "drivers_contrib": {
+          "Low Elevation": 0.35,
+          "Canal Proximity": 0.28,
+          "Poor Drainage": 0.22,
+          "Minimal Slope": 0.15
+        }
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9888,
+            14.6035
+          ],
+          [
+            120.99,
+            14.6027
+          ],
+          [
+            120.991,
+            14.6019
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "segment_id": "SEG-20418",
+        "barangay": "Tatalon",
+        "city": "Quezon City",
+        "risk_band": "med",
+        "risk_score": 52,
+        "rain_threshold_mmhr": 60,
+        "drivers_top": [
+          "Canal Proximity",
+          "Minimal Slope"
+        ],
+        "drivers_contrib": {
+          "Canal Proximity": 0.4,
+          "Minimal Slope": 0.25,
+          "Low Elevation": 0.2,
+          "Poor Drainage": 0.15
+        }
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.006,
+            14.618
+          ],
+          [
+            121.0068,
+            14.6172
+          ],
+          [
+            121.0075,
+            14.6165
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "segment_id": "SEG-30907",
+        "barangay": "San Miguel",
+        "city": "Manila",
+        "risk_band": "low",
+        "risk_score": 22,
+        "rain_threshold_mmhr": 75,
+        "drivers_top": [
+          "Good Drainage"
+        ],
+        "drivers_contrib": {
+          "Good Drainage": 0.55,
+          "Higher Elevation": 0.3,
+          "Slope": 0.15
+        }
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.987,
+            14.6015
+          ],
+          [
+            120.9878,
+            14.6007
+          ],
+          [
+            120.9885,
+            14.6
+          ]
+        ]
+      }
+    }
+  ]
+}
