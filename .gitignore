@@ -9,4 +9,5 @@ pipeline/outputs/
 data/images/
 data/annotation_v1_images/
 data/meta/**/*local.csv
+data/meta/**/*ls.csv
 venv
