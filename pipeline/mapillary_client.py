@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from pathlib import Path
+import random
 import csv
 import math
 import time
@@ -52,7 +53,23 @@ TOKEN = os.getenv("MAPILLARY_TOKEN")
 if not TOKEN:
     raise RuntimeError("Missing MAPILLARY_TOKEN. Set it in .env or the environment.")
 
+# ----- RATE LIMITER (to limit requests and not bombard the server) -----
+class QPSLimiter:
+    def __init__(self, qps: float):
+        self.period = 1.0 / max(qps, 1e-6)
+        self.next_t = 0.0
+    def wait(self, jitter: tuple[float,float]=(0.0, 0.0)):
+        now = time.monotonic()
+        self.next_t = max(self.next_t + self.period, now)
+        delay = self.next_t - now
+        if delay > 0:
+            time.sleep(delay + random.uniform(*jitter))
+
+cell_qps = QPSLimiter(qps=3.0)
+img_qps  = QPSLimiter(qps=8.0)
+
 # -----------------------
+
 
 def make_session(token: str,
                  timeout: tuple[int, int] = (5, 30),
@@ -69,9 +86,10 @@ def make_session(token: str,
     retry = Retry(
         total=retries,
         backoff_factor=backoff,
-        status_forcelist=[429, 502, 503, 504],
+        status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=frozenset({"GET"}),
         raise_on_status=False,
+        respect_retry_after_header=True,
     )
     s.mount("https://", HTTPAdapter(max_retries=retry))
 
@@ -112,6 +130,8 @@ def get_mapillary_images(session: requests.Session,
         print(f"\nFetching cell {i+1}/{len(cells)}: {cell}")
         params = base_params.copy()
         params["bbox"] = f"{cell['west']},{cell['south']},{cell['east']},{cell['north']}"
+
+        cell_qps.wait(jitter=(0.02, 0.08))
         response = session.get(url, params=params, timeout=getattr(session, "request_timeout", (5, 30)))
 
         if response.status_code == 400 and "Unsupported get request" in response.text:
@@ -137,8 +157,6 @@ def get_mapillary_images(session: requests.Session,
             unique_ids.add(iid)
             results.append(i)
 
-        time.sleep(0.2)
-
     print(f"\n[TOTAL] Fetched Images: {len(results)}\n")
     return results
 
@@ -161,6 +179,7 @@ def download_thumbnails(items: list[dict],
     rows: list[dict] = []
 
     def task(it):
+        img_qps.wait(jitter=(0.0, 0.03))
         row = _download_one(session, it, out_dir)
         if sleep_between:
             time.sleep(sleep_between)
@@ -286,7 +305,7 @@ def _download_one(session: requests.Session, img_data: dict, out_dir: Path, time
 
         try:
             kind = "2048" if (url == thumb_2048) else "1024"
-            resp = session.get(url, stream=True, timeout=timeout)
+            resp = session.get(url, timeout=timeout)
             resp.raise_for_status()
             data = np.frombuffer(resp.content, dtype=np.uint8)
             pano = cv2.imdecode(data, cv2.IMREAD_COLOR)
@@ -430,7 +449,7 @@ def _equirect_to_perspective(pano_bgr, yaw_deg=0.0, pitch_deg=0.0, hfov_deg=90.0
     x = (np.arange(out_w) - cx) / f
     y = -(np.arange(out_h) - cy) / f
     xx, yy = np.meshgrid(x, y)
-    zz = np.ones_like(xx)
+    zz = np.ones_like(xx) 
 
     # Normalize camera rays
     inv_norm = 1.0 / np.sqrt(xx*xx + yy*yy + zz*zz)
