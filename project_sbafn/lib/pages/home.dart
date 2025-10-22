@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'map_view.dart';
 
-// Top-level page: holds app state (scenario, chapter, selected feature)
-// and renders the left chapters, center map, right-side details pane.
-
 class StoryMapHomePage extends StatefulWidget {
   const StoryMapHomePage({super.key});
-
   @override
   State<StoryMapHomePage> createState() => _StoryMapHomePageState();
 }
@@ -14,7 +10,7 @@ class StoryMapHomePage extends StatefulWidget {
 class _StoryMapHomePageState extends State<StoryMapHomePage> {
   String scenario = '50'; // "30" | "50" | "100"
   int chapter = 2;        // 0..4
-  Map<String, dynamic>? selected; // feature properties from MapView
+  Map<String, dynamic>? selected;
 
   String get scenarioText => {
         '30': 'Rain 30 mm/hr',
@@ -23,9 +19,9 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
       }[scenario]!;
 
   ({String label, Color color}) get riskBand => {
-        '30': (label: 'Medium', color: const Color(0xFFEAB308)),   // yellow-500
-        '50': (label: 'High', color: const Color(0xFFEA580C)),     // orange-600
-        '100': (label: 'Very High', color: const Color(0xFFDC2626))// red-600
+        '30': (label: 'Medium', color: const Color(0xFFEAB308)),
+        '50': (label: 'High', color: const Color(0xFFEA580C)),
+        '100': (label: 'Very High', color: const Color(0xFFDC2626)),
       }[scenario]!;
 
   @override
@@ -40,21 +36,22 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
             // Header
             Container(
               height: 56,
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB)))),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   Row(
                     children: [
                       Container(
-                        height: 32,
-                        width: 32,
+                        height: 32, width: 32,
                         decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.black, borderRadius: BorderRadius.circular(12),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('MNL', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                        child: const Text('MNL',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(width: 12),
                       const Text('Manila Street Flood Risk — Story Map (Wireframe)',
@@ -76,15 +73,17 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
               ),
             ),
 
-            // Body grid
+            // Body
             Expanded(
               child: Row(
                 children: [
-                  // Left: Chapters
+                  // Left chapters (desktop)
                   if (md)
                     Container(
                       width: 320,
-                      decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFE5E7EB)))),
+                      decoration: const BoxDecoration(
+                        border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
+                      ),
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +126,7 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                       ),
                     ),
 
-                  // Center: Map (in its own file)
+                  // Center: Map
                   Expanded(
                     child: Stack(
                       children: [
@@ -135,14 +134,12 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                           child: MapView(
                             scenario: scenario,
                             chapter: chapter,
-                            onFeatureSelected: (props) => setState(() => selected = props),
+                            onFeatureSelected: (p) => setState(() => selected = p),
                           ),
                         ),
-
-                        // Overlay: scenario chip + legend
+                        // Overlay chips
                         Positioned(
-                          top: 12,
-                          left: 12,
+                          top: 12, left: 12,
                           child: Row(
                             children: [
                               _OverlayCard(
@@ -159,13 +156,10 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: riskBand.color,
-                                            borderRadius: BorderRadius.circular(999),
+                                            color: riskBand.color, borderRadius: BorderRadius.circular(999),
                                           ),
-                                          child: Text(
-                                            riskBand.label,
-                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                                          ),
+                                          child: Text(riskBand.label,
+                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
                                         ),
                                       ],
                                     ),
@@ -188,12 +182,9 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                             ],
                           ),
                         ),
-
-                        // Mobile scenario pills
                         if (!md)
                           Positioned(
-                            top: 8,
-                            right: 8,
+                            top: 8, right: 8,
                             child: Row(
                               children: [
                                 RiskPill(label: '30 mm/hr', active: scenario == '30', onTap: () => setState(() => scenario = '30')),
@@ -208,22 +199,22 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                     ),
                   ),
 
-                  // Right: Why card
+                  // Right detail panel (desktop)
                   if (md)
                     Container(
                       width: 360,
                       padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(border: Border(left: BorderSide(color: Color(0xFFE5E7EB)))),
+                      decoration: const BoxDecoration(
+                        border: Border(left: BorderSide(color: Color(0xFFE5E7EB))),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Why this street floods', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           if (selected != null) ...[
-                            Text(
-                              'Segment ID: ${selected!['seg_id']} • Barangay ${selected!['barangay']}',
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                            ),
+                            Text('Segment ID: ${selected!['seg_id']} • Barangay ${selected!['barangay']}',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(12),
@@ -236,12 +227,12 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Risk ($scenarioText)', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                                      Text('Risk ($scenarioText)',
+                                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: riskBand.color,
-                                          borderRadius: BorderRadius.circular(999),
+                                          color: riskBand.color, borderRadius: BorderRadius.circular(999),
                                         ),
                                         child: const Text('', style: TextStyle(color: Colors.white, fontSize: 11)),
                                       ),
@@ -355,10 +346,7 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Opacity(
-                  opacity: 0.7,
-                  child: Text('Step ${i + 1}', style: const TextStyle(fontSize: 11, letterSpacing: 0.5)),
-                ),
+                Opacity(opacity: 0.7, child: Text('Step ${i + 1}', style: const TextStyle(fontSize: 11, letterSpacing: 0.5))),
                 const SizedBox(height: 2),
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
@@ -372,13 +360,10 @@ class _StoryMapHomePageState extends State<StoryMapHomePage> {
   }
 }
 
-// --- Small UI atoms (kept here for simplicity) ---
-
 class RiskPill extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
-
   const RiskPill({super.key, required this.label, required this.active, required this.onTap});
 
   @override
@@ -402,31 +387,54 @@ class BarWidget extends StatelessWidget {
   final String label;
   final double value; // 0..1
   final Color color;
-
   const BarWidget({super.key, required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     final pct = (value * 100).round();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-          Text('$pct%', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-        ]),
-        const SizedBox(height: 4),
-        Container(
-          height: 8,
-          decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(4)),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: value.clamp(0, 1),
-              child: Container(
-                height: 8,
-                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
+        // Header row: make the label flexible so it can shrink
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
               ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$pct%',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 8,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: const Color(0xFFE5E7EB)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: value.clamp(0, 1),
+                    child: Container(color: color),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -434,11 +442,9 @@ class BarWidget extends StatelessWidget {
     );
   }
 }
-
 class LegendItem extends StatelessWidget {
   final Color color;
   final String label;
-
   const LegendItem({super.key, required this.color, required this.label});
 
   @override
@@ -454,7 +460,6 @@ class LegendItem extends StatelessWidget {
 class _OverlayCard extends StatelessWidget {
   final Widget child;
   const _OverlayCard({required this.child});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -473,7 +478,6 @@ class _OverlayCard extends StatelessWidget {
 class _Bullet extends StatelessWidget {
   final String text;
   const _Bullet(this.text);
-
   @override
   Widget build(BuildContext context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
