@@ -1,7 +1,8 @@
+// lib/map_view.dart
 import 'dart:convert';
-import 'dart:math' as math; // for min/max and Point
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 class MapView extends StatefulWidget {
@@ -23,16 +24,13 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   MapLibreMapController? _map;
 
-  // IDs
-  final String riskSourceId = 'risk';
-  final String riskLayerId = 'risk-lines';
-  final String boundarySourceId = 'manila-boundary';
-  final String boundaryFillId = 'mnl-fill';
-  final String boundaryLineId = 'mnl-line';
+  // Layer/source IDs
+  static const String riskSourceId = 'risk';
+  static const String riskLayerId  = 'risk-lines';
 
   static const _manila = LatLng(14.5995, 120.9842);
 
-  // Demo FeatureCollection (unchanged)
+  // Demo FeatureCollection (same as before)
   static const Map<String, dynamic> _demoRisk = {
     "type": "FeatureCollection",
     "features": [
@@ -105,7 +103,10 @@ class _MapViewState extends State<MapView> {
     ]
   };
 
-  // step(get("risk_{s}"), green, 0.33, yellow, 0.66, red)
+  // Keep data in memory for picking
+  Map<String, dynamic> _riskData = _demoRisk;
+
+  // Color ramp expression: step(get("risk_{s}"), green, 0.33, yellow, 0.66, red)
   dynamic _colorExpr(String s) => [
         'step',
         ['get', 'risk_$s'],
@@ -116,108 +117,65 @@ class _MapViewState extends State<MapView> {
         '#dc2626',
       ];
 
-  Future<void> _onMapCreated(MapLibreMapController controller) async {
-    _map = controller;
+  @override
+  Widget build(BuildContext context) {
+    return MapLibreMap(
+      styleString: 'https://demotiles.maplibre.org/style.json',
+      onMapCreated: (c) => _map = c,
+      onStyleLoadedCallback: _onStyleLoaded, // add after style is loaded
+      myLocationEnabled: false,
+      initialCameraPosition: const CameraPosition(target: _manila, zoom: 12),
+      rotateGesturesEnabled: true,
+      tiltGesturesEnabled: true,
+      onMapClick: _onMapTap,
+    );
+  }
 
-    await _addManilaBoundary();
+  Future<void> _onStyleLoaded() async {
+    // 1) HILLSHADE (pre-rendered PNG tiles)
+    await _map!.addSource(
+      'hillshade-src',
+      RasterSourceProperties(
+        tiles: const ['https://YOUR_HOST/tiles_hillshade/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        minzoom: 8,
+        maxzoom: 16,
+      ),
+    );
+    await _map!.addRasterLayer(
+      'hillshade-src',
+      'hillshade',
+      const RasterLayerProperties(rasterOpacity: 0.7),
+    );
 
-    await _map!.addSource(riskSourceId, GeojsonSourceProperties(data: _demoRisk));
+    // 2) STREETS (your existing code)
+    await _map!.addSource(riskSourceId, GeojsonSourceProperties(data: _riskData));
     await _map!.addLineLayer(
       riskSourceId,
       riskLayerId,
-      const LineLayerProperties(
-        lineWidth: 5,
-        lineOpacity: 0.9,
-      ),
-    );
-
-    // ❗ setPaintProperty → setLayerProperty
-    await _map!.setLayerProperties(
-      riskLayerId,
       LineLayerProperties(
         lineColor: _colorExpr(widget.scenario),
+        lineWidth: 10,
+        lineOpacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round',
       ),
     );
   }
 
-  Future<void> _addManilaBoundary() async {
-    try {
-      final url =
-          'https://nominatim.openstreetmap.org/search?city=Manila&country=Philippines&format=jsonv2&polygon_geojson=1&email=you@example.com';
-      final res = await http.get(Uri.parse(url));
-      if (res.statusCode != 200) return;
-      final items = json.decode(res.body) as List<dynamic>;
-      Map<String, dynamic>? admin = items.cast<Map<String, dynamic>>().firstWhere(
-            (it) =>
-                it['category'] == 'boundary' &&
-                it['type'] == 'administrative' &&
-                (it['display_name'] ?? '').toString().contains('City of Manila'),
-            orElse: () => items.isNotEmpty ? (items.first as Map<String, dynamic>) : {},
-          );
-      if (admin == null || admin.isEmpty || admin['geojson'] == null) return;
 
-      final feature = {
-        'type': 'Feature',
-        'geometry': admin['geojson'],
-        'properties': <String, dynamic>{},
-      };
-
-      await _map!.addSource(boundarySourceId, GeojsonSourceProperties(data: feature));
-      await _map!.addFillLayer(
-        boundarySourceId,
-        boundaryFillId,
-        const FillLayerProperties(fillColor: '#000000', fillOpacity: 0.06),
-      );
-      await _map!.addLineLayer(
-        boundarySourceId,
-        boundaryLineId,
-        const LineLayerProperties(lineColor: '#111111', lineWidth: 1.2),
-      );
-
-      // Fit bounds to exterior ring
-      final geom = (feature['geometry'] as Map<String, dynamic>);
-      final coords = (geom['type'] == 'Polygon'
-              ? [geom['coordinates']]
-              : geom['coordinates'])
-          .expand((e) => e)
-          .first as List<dynamic>;
-      var sw = const LatLng(90, 180);
-      var ne = const LatLng(-90, -180);
-      for (final c in coords.cast<List<dynamic>>()) {
-        final lat = (c[1] as num).toDouble();
-        final lng = (c[0] as num).toDouble();
-        sw = LatLng(math.min(sw.latitude, lat), math.min(sw.longitude, lng));
-        ne = LatLng(math.max(ne.latitude, lat), math.max(ne.longitude, lng));
-      }
-      await _map!.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          LatLngBounds(southwest: sw, northeast: ne),
-          left: 40, top: 40, right: 40, bottom: 40,
-        ),
-      );
-    } catch (_) {
-      // ok to skip on wireframe
-    }
+  // Recolor when scenario changes
+  Future<void> _applyScenarioPaint() async {
+    if (_map == null) return;
+    final ids = await _map!.getLayerIds();
+    if (!ids.contains(riskLayerId)) return;
+    await _map!.setLayerProperties(
+      riskLayerId,
+      LineLayerProperties(lineColor: _colorExpr(widget.scenario)),
+    );
   }
 
-    Future<void> _applyScenarioPaint() async {
-      if (_map == null) return;
-
-      // Correct way to check if layer exists
-      final allLayerIds = await _map!.getLayerIds();
-      final hasLayer = allLayerIds.contains(riskLayerId);
-
-      if (hasLayer) {
-        // Your call to setLayerProperties is correct
-        await _map!.setLayerProperties(
-          riskLayerId,
-          LineLayerProperties(
-            lineColor: _colorExpr(widget.scenario),
-          ),
-        );
-      }
-    }
-
+  // Camera per chapter
   Future<void> _applyChapterCamera() async {
     if (_map == null) return;
     if (widget.chapter == 0) {
@@ -227,17 +185,77 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // ❗ Use math.Point for the first argument
+  // --- Reliable picking: ignore renderer queries; choose nearest line by distance ---
   Future<void> _onMapTap(math.Point<double> point, LatLng latLng) async {
     if (_map == null) return;
-    final features = await _map!.queryRenderedFeatures(point, [riskLayerId], null);
-    if (features.isEmpty) return;
 
-    final first = features.first;
-    final props = Map<String, dynamic>.from(first['properties'] as Map);
+    // Fixed geographic tolerance (meters). 80–100 m is forgiving but still precise
+    // for your small demo dataset; tweak if needed.
+    const tolMeters = 80.0;
+
+    final props = _pickNearestFeature(latLng, maxMeters: tolMeters);
+    if (props == null) return;
+
     widget.onFeatureSelected(props);
-
     await _map!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 16));
+  }
+
+
+  // Convert pixel tolerance to meters at given lat/zoom (Web Mercator)
+  double _metersForPixels(double lat, double zoom, double pixels) {
+    final metersPerPixel = 156543.03392 * math.cos(lat * math.pi / 180.0) / math.pow(2.0, zoom);
+    return metersPerPixel * pixels;
+  }
+
+  // Find nearest line segment within maxMeters; return its properties if found
+  Map<String, dynamic>? _pickNearestFeature(LatLng p, {required double maxMeters}) {
+    if (_riskData['type'] != 'FeatureCollection') return null;
+    final List feats = (_riskData['features'] as List?) ?? const [];
+
+    double best = double.infinity;
+    Map<String, dynamic>? bestProps;
+
+    for (final f in feats.cast<Map<String, dynamic>>()) {
+      final geom = f['geometry'] as Map<String, dynamic>?;
+      if (geom == null || geom['type'] != 'LineString') continue;
+      final coords = (geom['coordinates'] as List?)?.cast<List>() ?? const [];
+
+      for (int i = 0; i < coords.length - 1; i++) {
+        final a = _ll(coords[i]);
+        final b = _ll(coords[i + 1]);
+        final d = _pointToSegmentMeters(p, a, b);
+        if (d < best) {
+          best = d;
+          bestProps = (f['properties'] as Map).cast<String, dynamic>();
+        }
+      }
+    }
+
+    return (best <= maxMeters) ? bestProps : null;
+  }
+
+  // Convert [lon,lat] to LatLng
+  LatLng _ll(List c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble());
+
+  // Distance from point P to line segment AB in meters (local equirectangular)
+  double _pointToSegmentMeters(LatLng p, LatLng a, LatLng b) {
+    const double mPerDegLat = 111320.0;
+    final double cosLat = math.cos(p.latitude * math.pi / 180.0);
+
+    double x(num lon) => (lon - p.longitude) * mPerDegLat * cosLat;
+    double y(num lat) => (lat - p.latitude) * mPerDegLat;
+
+    final ax = x(a.longitude), ay = y(a.latitude);
+    final bx = x(b.longitude), by = y(b.latitude);
+
+    final vx = bx - ax, vy = by - ay;
+    final wx = -ax,    wy = -ay;
+
+    final vv = vx*vx + vy*vy;
+    final t = (vv == 0) ? 0.0 : ((wx*vx + wy*vy) / vv).clamp(0.0, 1.0);
+
+    final cx = ax + t*vx, cy = ay + t*vy; // closest point to P (which we set as origin)
+    return math.sqrt(cx*cx + cy*cy);
   }
 
   @override
@@ -249,18 +267,5 @@ class _MapViewState extends State<MapView> {
     if (oldWidget.chapter != widget.chapter) {
       _applyChapterCamera();
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MapLibreMap(
-      styleString: 'https://demotiles.maplibre.org/style.json',
-      onMapCreated: _onMapCreated,
-      myLocationEnabled: false,
-      initialCameraPosition: const CameraPosition(target: _manila, zoom: 12),
-      rotateGesturesEnabled: true,
-      tiltGesturesEnabled: true,
-      onMapClick: _onMapTap,
-    );
   }
 }
