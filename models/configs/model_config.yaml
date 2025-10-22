@@ -1,0 +1,10 @@
+random_state: 67
+
+flood_scoring_pu:
+  light_gbm:
+    n_estimators: 1000
+    learning_rate: 0.01
+    max_depth: 7
+    class_weight:
+      0: 1
+      1: 5
