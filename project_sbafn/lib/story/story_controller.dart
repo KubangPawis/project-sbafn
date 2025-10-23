@@ -28,8 +28,6 @@ class StoryController {
 
     final segRaw = await rootBundle.loadString('assets/segments.geojson');
     segments = SegmentFeature.listFromGeoJson(segRaw);
-
-    // Optional: try to join elevations from CSV if present.
     try {
       await _joinElevationsCsv('assets/mnl_segments_with_elevation.csv');
     } catch (_) {/* no-op */}
@@ -39,13 +37,11 @@ class StoryController {
     final map = _map;
     if (map == null) return;
 
-    // Clear old
     for (final ln in _lineBySegmentId.values) {
       try { await map.removeLine(ln); } catch (_) {}
     }
     _lineBySegmentId.clear();
 
-    // Draw lines
     for (final s in segments) {
       final line = await map.addLine(LineOptions(
         geometry: s.lineString.map((p) => LatLng(p[1], p[0])).toList(),
@@ -56,7 +52,6 @@ class StoryController {
       _lineBySegmentId[s.id] = line;
     }
 
-    // Tap handling
     map.onLineTapped.add((line) {
       for (final e in _lineBySegmentId.entries) {
         if (e.value.id == line.id) {

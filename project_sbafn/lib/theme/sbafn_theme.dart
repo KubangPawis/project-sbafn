@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+
+class RiskColors extends ThemeExtension<RiskColors> {
+  final Color low;
+  final Color med;
+  final Color high;
+  const RiskColors({required this.low, required this.med, required this.high});
+
+  @override
+  RiskColors copyWith({Color? low, Color? med, Color? high}) =>
+      RiskColors(low: low ?? this.low, med: med ?? this.med, high: high ?? this.high);
+
+  @override
+  RiskColors lerp(ThemeExtension<RiskColors>? other, double t) {
+    if (other is! RiskColors) return this;
+    return RiskColors(
+      low:   Color.lerp(low,  other.low,  t)!,
+      med:   Color.lerp(med,  other.med,  t)!,
+      high:  Color.lerp(high, other.high, t)!,
+    );
+  }
+}
+
+class SBAFNTheme {
+  static const _seed = Color(0xFF0B3A5B);
+  static const _footerNavy = Color(0xFF0A2F48);
+
+  static ThemeData light() {
+    final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.light);
+
+    final txt = Typography.englishLike2018.merge(Typography.blackMountainView);
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+
+      appBarTheme: AppBarTheme(
+        backgroundColor: _seed,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: txt.titleMedium?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+
+      cardTheme: CardThemeData(
+        elevation: 6,
+        color: scheme.surface,
+        surfaceTintColor: scheme.surface, // ok in recent Flutter (M3)
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: EdgeInsets.zero,
+      ),
+
+      chipTheme: ChipThemeData(
+        shape: const StadiumBorder(),
+        side: BorderSide(color: scheme.outlineVariant),
+        selectedColor: scheme.primaryContainer,
+        checkmarkColor: scheme.onPrimaryContainer,
+        showCheckmark: true,
+        labelStyle: txt.labelLarge,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          side: BorderSide(color: scheme.outlineVariant),
+          foregroundColor: scheme.onSurface,
+        ),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        ),
+      ),
+
+      sliderTheme: SliderThemeData(
+        trackHeight: 4,
+        activeTrackColor: scheme.primary,
+        inactiveTrackColor: scheme.outlineVariant,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+        showValueIndicator: ShowValueIndicator.always,
+        valueIndicatorColor: scheme.surfaceContainerHigh,
+        valueIndicatorTextStyle: txt.labelMedium,
+      ),
+
+      dividerTheme: DividerThemeData(color: scheme.outlineVariant, thickness: 1),
+
+      extensions: const <ThemeExtension<dynamic>>[
+        RiskColors(
+          low:  Color(0xFF2F6EA5), // blue
+          med:  Color(0xFFE67E22), // orange
+          high: Color(0xFFE74C3C), // red
+        ),
+      ],
+
+      bottomAppBarTheme: const BottomAppBarThemeData(
+        color: _footerNavy,
+        elevation: 0,
+        height: 56,
+        shape: CircularNotchedRectangle(),
+        surfaceTintColor: Colors.transparent,
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    final base = light();
+    return base.copyWith(
+      colorScheme: ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.dark),
+    );
+  }
+}

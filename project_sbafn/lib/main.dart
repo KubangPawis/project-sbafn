@@ -5,6 +5,8 @@ import 'package:project_sbafn/story/story_map_page.dart';
 import 'package:project_sbafn/pages/home.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:project_sbafn/theme/sbafn_theme.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/env/.env');
@@ -19,6 +21,9 @@ class SBAFNApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SBAFN',
+      theme: SBAFNTheme.light(),
+      darkTheme: SBAFNTheme.dark(),
+      themeMode: ThemeMode.light,
       initialRoute: '/',
       routes: {
         '/':        (_) => const LandingPage(),         // new
