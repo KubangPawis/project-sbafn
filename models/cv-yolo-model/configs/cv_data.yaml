@@ -1,0 +1,9 @@
+path: data/annotation_v1_images
+train: train/images
+val: val/images
+test: test/images
+names:
+    0: curb_inlet
+    1: drainage_grate
+    2: open_canal
+    3: veg_strip
