@@ -1,13 +1,15 @@
-// lib/map_view.dart
 import 'dart:convert';
 import 'dart:math' as math;
-
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:project_sbafn/story/story_models.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MapView extends StatefulWidget {
-  final String scenario; // "30" | "50" | "100"
-  final int chapter;     // 0..4
+  final String scenario;                 // "30" | "50" | "100"
+  final int chapter;                     // index of the active chapter
+  final CameraSpec? chapterCamera;       // camera to fly to for this chapter
   final ValueChanged<Map<String, dynamic>> onFeatureSelected;
 
   const MapView({
@@ -15,6 +17,7 @@ class MapView extends StatefulWidget {
     required this.scenario,
     required this.chapter,
     required this.onFeatureSelected,
+    this.chapterCamera,
   });
 
   @override
@@ -22,15 +25,23 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  MapLibreMapController? _map;
+  late final String _maptilerKey =
+      dotenv.env['MAPTILER_KEY'] ??
+      const String.fromEnvironment('MAPTILER_KEY', defaultValue: '');
 
-  // Layer/source IDs
-  static const String riskSourceId = 'risk';
-  static const String riskLayerId  = 'risk-lines';
+  late final String _styleUrl =
+      'https://api.maptiler.com/maps/dataviz/style.json?key=$_maptilerKey';
+
+  MapLibreMapController? _map;
+  bool _styleReady = false;
+
+  // --- NEW: Streets overlay ids ---
+  static const String streetsSrcId = 'streets-src';
+  static const String streetsLyrId = 'streets-layer';
 
   static const _manila = LatLng(14.5995, 120.9842);
 
-  // Demo FeatureCollection (same as before)
+  // Demo FeatureCollection (kept as-is)
   static const Map<String, dynamic> _demoRisk = {
     "type": "FeatureCollection",
     "features": [
@@ -103,10 +114,9 @@ class _MapViewState extends State<MapView> {
     ]
   };
 
-  // Keep data in memory for picking
   Map<String, dynamic> _riskData = _demoRisk;
 
-  // Color ramp expression: step(get("risk_{s}"), green, 0.33, yellow, 0.66, red)
+  // Risk color ramp (kept as-is)
   dynamic _colorExpr(String s) => [
         'step',
         ['get', 'risk_$s'],
@@ -119,10 +129,15 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      _maptilerKey.isNotEmpty,
+      'MAPTILER_KEY is missing. Add it via .env or --dart-define.',
+    );
+
     return MapLibreMap(
-      styleString: 'https://demotiles.maplibre.org/style.json',
+      styleString: _styleUrl,
       onMapCreated: (c) => _map = c,
-      onStyleLoadedCallback: _onStyleLoaded, // add after style is loaded
+      onStyleLoadedCallback: _onStyleLoaded,
       myLocationEnabled: false,
       initialCameraPosition: const CameraPosition(target: _manila, zoom: 12),
       rotateGesturesEnabled: true,
@@ -132,11 +147,13 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> _onStyleLoaded() async {
-    // 1) HILLSHADE (pre-rendered PNG tiles)
+    if (_map == null) return;
+
+    // 1) Optional: hillshade (leave as placeholder)
     await _map!.addSource(
       'hillshade-src',
-      RasterSourceProperties(
-        tiles: const ['https://YOUR_HOST/tiles_hillshade/{z}/{x}/{y}.png'],
+      const RasterSourceProperties(
+        tiles: ['https://YOUR_HOST/tiles_hillshade/{z}/{x}/{y}.png'],
         tileSize: 256,
         minzoom: 8,
         maxzoom: 16,
@@ -148,36 +165,71 @@ class _MapViewState extends State<MapView> {
       const RasterLayerProperties(rasterOpacity: 0.7),
     );
 
-    // 2) STREETS (your existing code)
-    await _map!.addSource(riskSourceId, GeojsonSourceProperties(data: _riskData));
+    // 2) NEW: draw all Manila streets (plain blue)
+    await _addStreetsFromAsset('assets/mnl_segments.geojson');
+
+    _styleReady = true;
+    await _applyChapterCamera();
+  }
+
+  /// Load GeoJSON from assets and render it as blue lines.
+  Future<void> _addStreetsFromAsset(String assetPath) async {
+    if (_map == null) return;
+
+    final raw = await rootBundle.loadString(assetPath);
+    final geo = json.decode(raw) as Map<String, dynamic>;
+
+    // Add as a source
+    await _map!.addSource(
+      streetsSrcId,
+      GeojsonSourceProperties(data: geo),
+    );
+
+    // Draw it
     await _map!.addLineLayer(
-      riskSourceId,
-      riskLayerId,
-      LineLayerProperties(
-        lineColor: _colorExpr(widget.scenario),
-        lineWidth: 10,
-        lineOpacity: 0.95,
+      streetsSrcId,
+      streetsLyrId,
+      const LineLayerProperties(
+        lineColor: '#2F6EA5',  // blue
+        lineWidth: 2.0,
+        lineOpacity: 0.9,
         lineCap: 'round',
         lineJoin: 'round',
       ),
+      // belowLayerId: 'place-label', // use if your basemap has label layer ids you want to respect
     );
   }
 
+  Future<void> _flyTo(CameraSpec cam) async {
+    if (_map == null) return;
+    await _map!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(cam.lat, cam.lng),
+          zoom: cam.zoom,
+          bearing: cam.bearing,
+          tilt: cam.pitch,
+        ),
+      ),
+      duration: Duration(milliseconds: cam.durationMs),
+    );
+  }
 
-  // Recolor when scenario changes
+  // Recolor demo risk when scenario changes
   Future<void> _applyScenarioPaint() async {
-    if (_map == null) return;
+    if (_map == null || !_styleReady) return;
     final ids = await _map!.getLayerIds();
-    if (!ids.contains(riskLayerId)) return;
-    await _map!.setLayerProperties(
-      riskLayerId,
-      LineLayerProperties(lineColor: _colorExpr(widget.scenario)),
-    );
   }
 
-  // Camera per chapter
+  // Camera per chapter – prefers provided camera
   Future<void> _applyChapterCamera() async {
-    if (_map == null) return;
+    if (_map == null || !_styleReady) return;
+
+    if (widget.chapterCamera != null) {
+      await _flyTo(widget.chapterCamera!);
+      return;
+    }
+    // Fallback demo
     if (widget.chapter == 0) {
       await _map!.animateCamera(CameraUpdate.newLatLngZoom(_manila, 12));
     } else if (widget.chapter == 2) {
@@ -185,14 +237,11 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // --- Reliable picking: ignore renderer queries; choose nearest line by distance ---
+  // --- Picking (still uses demo risk features) ---
   Future<void> _onMapTap(math.Point<double> point, LatLng latLng) async {
-    if (_map == null) return;
+    if (_map == null || !_styleReady) return;
 
-    // Fixed geographic tolerance (meters). 80–100 m is forgiving but still precise
-    // for your small demo dataset; tweak if needed.
     const tolMeters = 80.0;
-
     final props = _pickNearestFeature(latLng, maxMeters: tolMeters);
     if (props == null) return;
 
@@ -200,14 +249,6 @@ class _MapViewState extends State<MapView> {
     await _map!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 16));
   }
 
-
-  // Convert pixel tolerance to meters at given lat/zoom (Web Mercator)
-  double _metersForPixels(double lat, double zoom, double pixels) {
-    final metersPerPixel = 156543.03392 * math.cos(lat * math.pi / 180.0) / math.pow(2.0, zoom);
-    return metersPerPixel * pixels;
-  }
-
-  // Find nearest line segment within maxMeters; return its properties if found
   Map<String, dynamic>? _pickNearestFeature(LatLng p, {required double maxMeters}) {
     if (_riskData['type'] != 'FeatureCollection') return null;
     final List feats = (_riskData['features'] as List?) ?? const [];
@@ -230,18 +271,14 @@ class _MapViewState extends State<MapView> {
         }
       }
     }
-
     return (best <= maxMeters) ? bestProps : null;
   }
 
-  // Convert [lon,lat] to LatLng
   LatLng _ll(List c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble());
 
-  // Distance from point P to line segment AB in meters (local equirectangular)
   double _pointToSegmentMeters(LatLng p, LatLng a, LatLng b) {
     const double mPerDegLat = 111320.0;
     final double cosLat = math.cos(p.latitude * math.pi / 180.0);
-
     double x(num lon) => (lon - p.longitude) * mPerDegLat * cosLat;
     double y(num lat) => (lat - p.latitude) * mPerDegLat;
 
@@ -249,22 +286,25 @@ class _MapViewState extends State<MapView> {
     final bx = x(b.longitude), by = y(b.latitude);
 
     final vx = bx - ax, vy = by - ay;
-    final wx = -ax,    wy = -ay;
+    final wx = -ax, wy = -ay;
 
-    final vv = vx*vx + vy*vy;
-    final t = (vv == 0) ? 0.0 : ((wx*vx + wy*vy) / vv).clamp(0.0, 1.0);
+    final vv = vx * vx + vy * vy;
+    final t = (vv == 0) ? 0.0 : ((wx * vx + wy * vy) / vv).clamp(0.0, 1.0);
 
-    final cx = ax + t*vx, cy = ay + t*vy; // closest point to P (which we set as origin)
-    return math.sqrt(cx*cx + cy*cy);
+    final cx = ax + t * vx, cy = ay + t * vy;
+    return math.sqrt(cx * cx + cy * cy);
   }
 
   @override
   void didUpdateWidget(covariant MapView oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (oldWidget.scenario != widget.scenario) {
       _applyScenarioPaint();
     }
-    if (oldWidget.chapter != widget.chapter) {
+    final chapterChanged = oldWidget.chapter != widget.chapter;
+    final camChanged = oldWidget.chapterCamera != widget.chapterCamera;
+    if (chapterChanged || camChanged) {
       _applyChapterCamera();
     }
   }

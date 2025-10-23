@@ -38,6 +38,7 @@ dependencies:
   visibility_detector: ^0.4.0
   flutter_markdown: ^0.7.3
   csv: ^5.0.2 
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +69,8 @@ flutter:
     - assets/story.json              
     - assets/segments.geojson                
     - assets/mnl_segments.geojson            
-    - assets/mnl_segments_with_elevation.csv 
+    - assets/mnl_segments_with_elevation.csv
+    - assets/env/.env
     
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
