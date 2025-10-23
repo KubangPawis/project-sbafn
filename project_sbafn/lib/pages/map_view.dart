@@ -3,16 +3,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:flutter/gestures.dart' show PointerHoverEvent;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
+
 import 'package:project_sbafn/story/story_models.dart';
 
-import 'package:flutter/gestures.dart' show PointerHoverEvent;
-
 class MapView extends StatefulWidget {
-  final String scenario;                 // "30" | "50" | "100"
-  final int chapter;                     // active chapter index
-  final CameraSpec? chapterCamera;       // camera for scrollytelling
+  final String scenario;
+  final int chapter;
+  final CameraSpec? chapterCamera;
   final ValueChanged<Map<String, dynamic>> onFeatureSelected;
 
   const MapView({
@@ -28,7 +28,7 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  // --- Style/Map -------------------------------------------------------------
+  // --- Style / Map -----------------------------------------------------------
   late final String _maptilerKey =
       dotenv.env['MAPTILER_KEY'] ??
       const String.fromEnvironment('MAPTILER_KEY', defaultValue: '');
@@ -40,26 +40,35 @@ class _MapViewState extends State<MapView> {
   bool _styleReady = false;
 
   // --- Data & layers ---------------------------------------------------------
-  static const String streetsSrcId   = 'streets-src';
-  static const String streetsLyrId   = 'streets-layer';
-  static const String streetsSelLyrId = 'streets-selected';
+  static const String streetsSrcId     = 'streets-src';
+  static const String streetsLyrId     = 'streets-lyr';
+  static const String streetsSelLyrId  = 'streets-selected';
 
-  Map<String, dynamic>? _segmentsGeo; // parsed GeoJSON
+  Map<String, dynamic>? _segmentsGeo; // parsed GeoJSON for picking
   String? _selectedSegId;
 
   static const _manila = LatLng(14.5995, 120.9842);
 
-  // --- Cursor Hover -----------------------------------------------------------
-
+  // --- Cursor hover (clickable cue) ------------------------------------------
   bool _hoverClickable = false;
   bool _hoverBusy = false;
 
+  static const Map<String, String> _scenarioToEvt = {
+    '30' : 'EVT_01',
+    '50' : 'EVT_03',
+    '100': 'EVT_06',
+  };
+
   @override
   Widget build(BuildContext context) {
-    assert(_maptilerKey.isNotEmpty, 'MAPTILER_KEY is missing (.env or --dart-define).');
-    return MouseRegion(                                 
-      cursor: _hoverClickable? SystemMouseCursors.click : SystemMouseCursors.basic,
-      onHover: _handleHover,                           
+    assert(
+      _maptilerKey.isNotEmpty,
+      'MAPTILER_KEY is missing (.env or --dart-define).',
+    );
+
+    return MouseRegion(
+      cursor: _hoverClickable ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onHover: _handleHover,
       child: MapLibreMap(
         styleString: _styleUrl,
         onMapCreated: (c) => _map = c,
@@ -70,15 +79,15 @@ class _MapViewState extends State<MapView> {
         tiltGesturesEnabled: true,
         onMapClick: _onMapTap,
       ),
-    );  
+    );
   }
 
   Future<void> _handleHover(PointerHoverEvent e) async {
-    if (_hoverBusy || _map == null || !_styleReady) return;
+    if (_hoverBusy || _map == null || !_styleReady || _segmentsGeo == null) return;
     _hoverBusy = true;
     try {
       final pt = math.Point<double>(e.localPosition.dx, e.localPosition.dy);
-      final latLng = await _map!.toLatLng(pt); // <-- works on older versions
+      final latLng = await _map!.toLatLng(pt);
       final clickable = _pickNearestFeature(latLng, maxMeters: 20.0) != null;
       if (clickable != _hoverClickable) {
         setState(() => _hoverClickable = clickable);
@@ -88,19 +97,20 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-
+  // ---------------------------------------------------------------------------
+  // Style loaded → add sources/layers
+  // ---------------------------------------------------------------------------
   Future<void> _onStyleLoaded() async {
     if (_map == null) return;
 
-    // Add your segments (all blue)
-    await _addStreetsFromAsset('assets/mnl_segments.geojson');
+    await _addStreetsFromAsset(); // base colored layer
 
-    // Selected overlay layer (initially matches nothing)
+    // Selected overlay layer (above base layer). Start hidden via filter.
     await _map!.addLineLayer(
       streetsSrcId,
       streetsSelLyrId,
       const LineLayerProperties(
-        lineColor: '#0EA5E9', // blue-accent
+        lineColor: '#0EA5E9',
         lineWidth: 6.0,
         lineOpacity: 1.0,
         lineCap: 'round',
@@ -110,40 +120,96 @@ class _MapViewState extends State<MapView> {
     await _setSelectedFilter(null);
 
     _styleReady = true;
-    await _applyChapterCamera(); // let scrollytelling drive the camera initially
+    await _applyChapterCamera();
   }
 
-  Future<void> _addStreetsFromAsset(String assetPath) async {
-    final raw = await rootBundle.loadString(assetPath);
+  dynamic _streetColorExpr(String scenario) {
+    final evt = _scenarioToEvt[scenario] ?? 'EVT_03';
+    final tierProp = 'tier_$evt';
+    final riskProp = 'risk_$scenario';
+    final probProp = 'p_$evt';
+
+    const low  = '#7ED957';
+    const med  = '#F59E0B'; 
+    const high = '#EF4444'; 
+    const miss = '#CBD5E1'; 
+
+    return [
+      'case',
+      ['has', tierProp],
+      ['match', ['downcase', ['to-string', ['get', tierProp]]],
+        'low',    low,
+        'medium', med,
+        'med',    med,
+        'high',   high,
+        miss
+      ],
+
+      ['let', 'raw',
+        ['coalesce',
+          ['to-number', ['get', riskProp]],
+          ['to-number', ['get', probProp]],
+          -1
+        ],
+        ['case',
+          ['<', ['var', 'raw'], 0], miss, // no data
+          ['step',
+            // normalize raw to 0..1 if needed, clamp to [0,1]
+            ['min', 1, ['max', 0, ['case',
+              ['>', ['var', 'raw'], 1], ['/', ['var', 'raw'], 100.0],
+              ['var', 'raw']
+            ]]],
+            low, 0.33, med, 0.66, high
+          ]
+        ]
+      ],
+    ];
+  }
+
+  Future<void> _addStreetsFromAsset() async {
+    final raw = await rootBundle.loadString('mnl_segments_enriched.geojson');
     _segmentsGeo = json.decode(raw) as Map<String, dynamic>;
 
     await _map!.addSource(
       streetsSrcId,
-      GeojsonSourceProperties(
-        data: _segmentsGeo!,
-        // generateId: true, // not needed since we filter by seg_id
-      ),
+      GeojsonSourceProperties(data: _segmentsGeo),
     );
 
     await _map!.addLineLayer(
       streetsSrcId,
       streetsLyrId,
-      const LineLayerProperties(
-        lineColor: '#2F6EA5',
-        lineWidth: 2.0,
-        lineOpacity: 0.9,
+      LineLayerProperties(
+        lineColor: _streetColorExpr(widget.scenario),
+        lineWidth: [
+          'interpolate', ['linear'], ['zoom'],
+          10, 1.4,
+          14, 2.2,
+          17, 3.0,
+        ],
+        lineOpacity: 0.95,
         lineCap: 'round',
         lineJoin: 'round',
       ),
     );
   }
 
-  // --- Selection -------------------------------------------------------------
+  Future<void> _applyScenarioPaint() async {
+    if (_map == null) return;
+    final ids = await _map!.getLayerIds();
+    if (!ids.contains(streetsLyrId)) return;
 
+    await _map!.setLayerProperties(
+      streetsLyrId,
+      LineLayerProperties(lineColor: _streetColorExpr(widget.scenario)),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Selection
+  // ---------------------------------------------------------------------------
   Future<void> _onMapTap(math.Point<double> point, LatLng latLng) async {
     if (_map == null || !_styleReady || _segmentsGeo == null) return;
 
-    // Find nearest segment (80 m tolerance is forgiving but practical)
     const tolMeters = 80.0;
     final hit = _pickNearestFeature(latLng, maxMeters: tolMeters);
 
@@ -156,27 +222,31 @@ class _MapViewState extends State<MapView> {
     _selectedSegId = hit['seg_id']?.toString();
     await _setSelectedFilter(_selectedSegId);
 
-    // Nudge camera in a bit
+    // Focus in slightly
     await _map!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15.5));
 
-    // Let the host page show the popover & drawer from properties
+    // Let the page show the popover / drawer
     widget.onFeatureSelected(hit);
   }
 
   Future<void> _setSelectedFilter(String? segId) async {
     if (_map == null) return;
-    // Filter that matches nothing when segId == null
     final filter = (segId == null)
-        ? ['==', ['get', 'seg_id'], '__none__']
+        ? ['==', ['get', 'seg_id'], '__none__'] // matches nothing
         : ['==', ['get', 'seg_id'], segId];
     await _map!.setFilter(streetsSelLyrId, filter);
   }
 
-  Map<String, dynamic>? _pickNearestFeature(LatLng p, {required double maxMeters}) {
-    final fcType = _segmentsGeo?['type'];
-    if (fcType != 'FeatureCollection') return null;
+  Map<String, dynamic>? _pickNearestFeature(
+    LatLng p, {
+    required double maxMeters,
+  }) {
+    if (_segmentsGeo?['type'] != 'FeatureCollection') return null;
 
-    final feats = (_segmentsGeo?['features'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    final feats =
+        (_segmentsGeo?['features'] as List?)?.cast<Map<String, dynamic>>() ??
+            const [];
+
     double best = double.infinity;
     Map<String, dynamic>? bestProps;
 
@@ -185,15 +255,27 @@ class _MapViewState extends State<MapView> {
       if (geom == null) continue;
 
       final type = geom['type'] as String? ?? '';
-      final props = (f['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final props =
+          (f['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+
       if (type == 'LineString') {
         final coords = (geom['coordinates'] as List?)?.cast<List>() ?? const [];
-        _scanLineString(p, coords, props, (d, pr) { if (d < best) { best = d; bestProps = pr; } });
+        _scanLineString(p, coords, props, (d, pr) {
+          if (d < best) {
+            best = d;
+            bestProps = pr;
+          }
+        });
       } else if (type == 'MultiLineString') {
         final lines = (geom['coordinates'] as List?)?.cast<List>() ?? const [];
         for (final line in lines) {
           final coords = (line as List).cast<List>();
-          _scanLineString(p, coords, props, (d, pr) { if (d < best) { best = d; bestProps = pr; } });
+          _scanLineString(p, coords, props, (d, pr) {
+            if (d < best) {
+              best = d;
+              bestProps = pr;
+            }
+          });
         }
       }
     }
@@ -215,7 +297,10 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  LatLng _ll(List c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble());
+  LatLng _ll(List c) => LatLng(
+        (c[1] as num).toDouble(),
+        (c[0] as num).toDouble(),
+      );
 
   double _pointToSegmentMeters(LatLng p, LatLng a, LatLng b) {
     const double mPerDegLat = 111320.0;
@@ -228,7 +313,7 @@ class _MapViewState extends State<MapView> {
     final bx = x(b.longitude), by = y(b.latitude);
 
     final vx = bx - ax, vy = by - ay;
-    final wx = -ax,    wy = -ay;
+    final wx = -ax, wy = -ay;
 
     final vv = vx * vx + vy * vy;
     final t = (vv == 0) ? 0.0 : ((wx * vx + wy * vy) / vv).clamp(0.0, 1.0);
@@ -237,8 +322,9 @@ class _MapViewState extends State<MapView> {
     return math.sqrt(cx * cx + cy * cy);
   }
 
-  // --- Scrollytelling camera -------------------------------------------------
-
+  // ---------------------------------------------------------------------------
+  // Scrollytelling camera
+  // ---------------------------------------------------------------------------
   Future<void> _applyChapterCamera() async {
     if (_map == null || !_styleReady) return;
 
@@ -270,8 +356,9 @@ class _MapViewState extends State<MapView> {
   void didUpdateWidget(covariant MapView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If scenario styling later controls color, update here.
-    // if (oldWidget.scenario != widget.scenario) { ... }
+    if (oldWidget.scenario != widget.scenario) {
+      _applyScenarioPaint();
+    }
 
     final chapterChanged = oldWidget.chapter != widget.chapter;
     final camChanged = oldWidget.chapterCamera != widget.chapterCamera;

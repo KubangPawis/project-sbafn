@@ -71,6 +71,7 @@ flutter:
     - assets/mnl_segments.geojson            
     - assets/mnl_segments_with_elevation.csv
     - assets/env/.env
+    - assets/flood_scores_r.csv
     
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
