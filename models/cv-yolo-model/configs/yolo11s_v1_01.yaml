@@ -1,0 +1,11 @@
+model: yolo11s.pt
+data: models/cv-yolo-model/configs/cv_data.yaml
+imgsz: 640
+epochs: 40
+batch: 4
+device: 0   # use first CUDA GPU
+workers: 2
+seed: 67
+patience: 20
+project: models/cv-yolo-model/runs
+name: y11s_baseline
