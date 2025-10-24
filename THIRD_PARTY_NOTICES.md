@@ -9,3 +9,9 @@ We **do not redistribute** Mapillary image files in this repository or in releas
 - This project is not endorsed by or affiliated with Mapillary.
 
 For details, see Mapillary’s Terms of Use and Attribution guidelines.
+
+# Copernicus DEM Notice
+
+This project contains modified Copernicus DEM data (GLO-30).
+© European Union, 1995–2025, produced using Copernicus data and information
+funded by the European Union — accessed via the AWS Open Data Registry.

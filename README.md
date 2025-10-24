@@ -108,7 +108,10 @@ Project SBAFN envisions to expand its feature to the following in future version
 ## 🪪 License
 
 * **Code**: Apache-2.0 (see `LICENSE`).
-* **Content/Imagery**: Mapillary imagery is not included in this repo and is governed by Mapillary’s Terms of Use and attribution rules. We only store metadata and our own annotations.
+* **Street View Imagery**: Mapillary imagery is not included in this repo and is governed by Mapillary’s Terms of Use and attribution rules. We only store metadata and our own annotations.
+- **Elevation data (DEM):** Contains modified Copernicus DEM (GLO-30). © European Union, 1995–2025, produced using Copernicus data and information funded by the European Union — accessed via the AWS Open Data Registry. See Copernicus terms of use and license.
+
+> This repository does **not** grant rights to any third-party datasets. Use of Mapillary/Copernicus materials must follow their respective licenses and terms.
 
 ## Team
 
