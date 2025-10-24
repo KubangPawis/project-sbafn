@@ -8,6 +8,18 @@ aoi:
     east: 121.029940
     north: 14.642303
 
+elevation:
+  out_dir: data/dem
+  cache_dir: data/dem/raster
+  tiles:
+    - s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N14_00_E120_00_DEM/Copernicus_DSM_COG_10_N14_00_E120_00_DEM.tif
+    - s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N14_00_E121_00_DEM/Copernicus_DSM_COG_10_N14_00_E121_00_DEM.tif
+
+folium:
+  starting_lat: 14.6462733
+  starting_long: 121.0460557
+  zoom_start: 12
+
 mapillary_api:
   image_retrieval:
     out_dir: data/images/
@@ -25,8 +37,3 @@ mapillary_api:
     repo_fields: ["id", "thumb_kind", "captured_at", "camera_type",
                   "sequence", "lat", "lon", "width", "height", "face", 
                   "yaw_deg", "pitch_deg", "hfov_deg"]
-
-folium:
-  starting_lat: 14.6462733
-  starting_long: 121.0460557
-  zoom_start: 12
