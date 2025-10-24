@@ -7,7 +7,8 @@ cache/
 
 pipeline/outputs/
 data/images/
+data/dem/
 data/annotation_v1_images/
 data/meta/**/*local.csv
 data/meta/**/*ls.csv
-venv
+**/*.tif
