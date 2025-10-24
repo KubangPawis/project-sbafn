@@ -90,7 +90,7 @@ def fetch_city_polygon(city, country):
 
 # --------------------
 
-def main():
+def fetch_elevation():
     env, srcs = open_sources()
     try:
         with env:
@@ -125,4 +125,4 @@ def main():
     print("[DONE] City-only rows:", len(df_city))
 
 if __name__ == "__main__":
-    main()
+    fetch_elevation()
