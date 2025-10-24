@@ -1,6 +1,4 @@
-<p align="center">
-    <img src="docs/images/docu_banner.png" alt="SBAFN Banner Image"/>
-</p>
+![SBAFN Banner Image](docs/images/docu_banner.png)
 
 # Project SBAFN (Street-based Assessment for Flood-prone Neighborhoods)
 
@@ -10,10 +8,7 @@ Project SBAFN is an explainable, **street-level flood-proneness** visualization 
 
 > This project aims to supersede **Project NOAH**, the Philippines' state-of-the-art initiative that provides area-based hazard overview, highlighting flood hazard zones at the national level. SBAFN offers the next step by covering the existing gaps of NOAH, by showing the street-level specifics of why floods happen, and give the explainability that was long needed for actual, effective decision making.
 
-<p align="center">
-    <img src="docs/images/docu_map.png" alt="SBAFN Map Snapshot"/>
-</p>
-
+![SBAFN Map Snapshot](docs/images/docu_map.png)
 
 ## 🔎 What SBAFN Adds
 
@@ -28,7 +23,11 @@ Project SBAFN is an explainable, **street-level flood-proneness** visualization 
 > For the specifics, refer to the overview in the Methodology section below or `docs/METHODOLOGY.md`.
 _____________
 
-## 🌊 Flood-Proneness Indicators
+## 🎯 Methodology
+
+![Project SBAFN's Methodology Diagram](docs/images/methods_diagram.png)
+
+### A. 🌊 Flood-Proneness Indicators
 
 Project SBAFN employs a hybrid geo implementation, employing both raster and vector geodata. Specifically through the following metrics:
 
