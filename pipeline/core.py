@@ -5,9 +5,10 @@ import osmnx as ox
 import folium
 import yaml
 
-from pipeline.street_define import make_segments, make_corridors
-from pipeline.node_lonlat_export import export_segment_lonlat
-from pipeline.segments_elevation import join_elevation_to_segments
+from pipeline.modules.street_define import make_segments, make_corridors
+from pipeline.modules.node_lonlat_export import export_segment_lonlat
+from pipeline.modules.segments_elevation import join_elevation_to_segments
+
 # -----------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

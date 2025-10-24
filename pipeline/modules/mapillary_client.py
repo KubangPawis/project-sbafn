@@ -16,7 +16,7 @@ import numpy as np
 
 # -----------------------
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 PIPELINE_DIR = REPO_ROOT / "pipeline"
 
 load_dotenv()
