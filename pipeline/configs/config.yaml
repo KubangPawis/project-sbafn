@@ -37,3 +37,9 @@ mapillary_api:
     repo_fields: ["id", "thumb_kind", "captured_at", "camera_type",
                   "sequence", "lat", "lon", "width", "height", "face", 
                   "yaw_deg", "pitch_deg", "hfov_deg"]
+
+rainfall:
+  inquirer:
+    search_page_base_url: https://www.inquirer.net/search/?q=LIST:+Flooded&page=
+    pages_delay: 2
+    article_load_delay: 1.5
