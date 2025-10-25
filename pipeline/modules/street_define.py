@@ -11,7 +11,7 @@ Outputs
     street_label, highway,  lanes, length_m, geometry (LineString)
 
 - corridors_gdf: connected pieces per normalized name
-  columns: corridor_id, name, n_segments, total_length_m, highway_mode, geometry
+  columns: corridor_id, name, n_segments, total_length_m, highway, geometry
 
 Notes
 - Project to a metric CRS for length-based splitting; default uses UTM zone from centroid (safe for city scale)
@@ -99,8 +99,13 @@ def make_segments(
       segment_id, parent_u, parent_v, parent_key, street_label,
       highway, lanes, length_m, geometry
     """
+
+    # [ERROR HANDLING] If `edges_gdf` is empty, return an empty gpd (projected EPSG:4326)
     if edges_gdf.empty:
-        return edges_gdf.copy()
+        return gpd.GeoDataFrame(columns=[
+            "segment_id","parent_u","parent_v","parent_key",
+            "street_label","highway","lanes","length_m","geometry"
+        ], geometry="geometry", crs="EPSG:4326")
 
     edges = edges_gdf.reset_index().copy()
 
@@ -176,14 +181,14 @@ def make_corridors(
     Build human-friendly "corridors" by connected components per street_label.
 
     Returns (corridors_gdf, segments_with_corridor_id)
-    - corridors columns: corridor_id, name, n_segments, total_length_m, highway_mode, geometry
+    - corridors columns: corridor_id, name, n_segments, total_length_m, highway, geometry
     - segments gains: corridor_id
 
     merge_dual: if True, merges dual carriageways with identical labels that sit within merge_buffer_m of each other
     """
     segs = segments_gdf.copy()
     if segs.empty:
-        return gpd.GeoDataFrame(columns=["corridor_id", "name", "n_segments", "total_length_m", "highway_mode", "geometry"], crs=segs.crs), segs
+        return gpd.GeoDataFrame(columns=["corridor_id", "name", "n_segments", "total_length_m", "highway", "geometry"], crs=segs.crs), segs
 
     # ensure label
     if "street_label" not in segs.columns:
@@ -264,7 +269,7 @@ def make_corridors(
               name=("street_label", "first"),
               n_segments=("segment_id", "count"),
               total_length_m=("_len", "sum"),
-              highway_mode=("highway", lambda s: s.dropna().iloc[0] if len(s.dropna()) else None),
+              highway=("highway", lambda s: s.dropna().iloc[0] if len(s.dropna()) else None),
               geometry=("geometry", lambda g: g.unary_union)
           )
           .reset_index()
@@ -276,7 +281,7 @@ def make_corridors(
     segs_out = gpd.GeoDataFrame(segs_out, geometry="geometry", crs=segs.crs)
 
     # Final tidy columns
-    corridors = corridors[["corridor_id", "name", "n_segments", "total_length_m", "highway_mode", "geometry"]]
+    corridors = corridors[["corridor_id", "name", "n_segments", "total_length_m", "highway", "geometry"]]
 
     return corridors, segs_out
 
