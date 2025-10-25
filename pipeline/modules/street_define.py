@@ -8,8 +8,7 @@ Outputs
 - segments_gdf: intersection-to-intersection edges (optionally split to target length)
   columns (suggested):
     segment_id, parent_u, parent_v, parent_key, corridor_id (filled after make_corridors),
-    street_label, highway, oneway, lanes, maxspeed, bridge, tunnel,
-    length_m, geometry (LineString)
+    street_label, highway,  lanes, length_m, geometry (LineString)
 
 - corridors_gdf: connected pieces per normalized name
   columns: corridor_id, name, n_segments, total_length_m, highway_mode, geometry
@@ -21,9 +20,7 @@ Notes
 - Dual carriageways remain separate corridors; optional merge hook included
 """
 from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 import geopandas as gpd
 import pandas as pd
@@ -100,8 +97,7 @@ def make_segments(
 
     Returns GeoDataFrame in EPSG:4326 with columns:
       segment_id, parent_u, parent_v, parent_key, street_label,
-      highway, oneway, lanes, maxspeed, bridge, tunnel,
-      length_m, geometry
+      highway, lanes, length_m, geometry
     """
     if edges_gdf.empty:
         return edges_gdf.copy()
@@ -116,8 +112,7 @@ def make_segments(
     edges["street_label"] = edges.apply(_normalize_street_label, axis=1)
 
     keep_cols = [
-        "u", "v", "key", "street_label", "highway", "oneway",
-        "lanes", "maxspeed", "bridge", "tunnel", "geometry"
+        "u", "v", "key", "street_label", "highway", "lanes", "geometry"
     ]
     for c in keep_cols:
         if c not in edges.columns:
@@ -125,7 +120,7 @@ def make_segments(
     edges = edges[keep_cols].copy()
 
     # flatten list-like columns to scalars (Parquet-safe)
-    for col in ("highway", "oneway", "lanes", "maxspeed", "bridge", "tunnel"):
+    for col in ("highway", "lanes"):
         edges[col] = edges[col].apply(lambda v: _first_non_null(v) if isinstance(v, (list, tuple)) else v)
 
     # project to metric for splitting/lengths
@@ -144,11 +139,7 @@ def make_segments(
                 "parent_key": r["key"],
                 "street_label": r["street_label"],
                 "highway": r.get("highway"),
-                "oneway": r.get("oneway"),
                 "lanes": r.get("lanes"),
-                "maxspeed": r.get("maxspeed"),
-                "bridge": r.get("bridge"),
-                "tunnel": r.get("tunnel"),
                 "length_m": length_m,
                 "_part": j,
                 "geometry": p,
@@ -169,8 +160,7 @@ def make_segments(
     segs = segs[
         [
             "segment_id", "parent_u", "parent_v", "parent_key",
-            "street_label", "highway", "oneway", "lanes", "maxspeed",
-            "bridge", "tunnel", "length_m", "geometry",
+            "street_label", "highway", "lanes", "length_m", "geometry",
         ]
     ]
     return segs
