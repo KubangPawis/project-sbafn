@@ -415,6 +415,7 @@ class _SegmentPopover extends StatelessWidget {
   final String scenario; // "30" | "50" | "100"
   final VoidCallback onWhy;
   final VoidCallback onClose;
+
   const _SegmentPopover({
     required this.props,
     required this.scenario,
@@ -422,9 +423,14 @@ class _SegmentPopover extends StatelessWidget {
     required this.onClose,
   });
 
-  // Best-effort name
+  // Best-effort name (street first)
   String _nameOf(Map<String, dynamic> p) {
-    return (p['name'] ?? p['road_name'] ?? p['street'] ?? p['highway'] ?? '—')
+    return (p['street_label'] ??
+            p['name'] ??
+            p['road_name'] ??
+            p['street'] ??
+            p['highway'] ??
+            'Unnamed Street')
         .toString();
   }
 
@@ -437,7 +443,6 @@ class _SegmentPopover extends StatelessWidget {
       final display = tier == 'med' ? 'MEDIUM' : tier.toUpperCase();
       return (display, '');
     }
-    // numeric fallback: risk_XX or p_EVTxx
     double? n;
     final r = p['risk_$scenario'];
     final q = p['p_$evt'];
@@ -445,12 +450,49 @@ class _SegmentPopover extends StatelessWidget {
     if (n == null && r is String) n = double.tryParse(r);
     if (n == null && q is num) n = q.toDouble();
     if (n == null && q is String) n = double.tryParse(q);
-    if (n == null) return ('—', ''); // nothing
-    if (n > 1) n = n / 100.0; // normalize 0..100 → 0..1
-
+    if (n == null) return ('—', '');
+    if (n > 1) n = n / 100.0;
     final band = (n >= 0.66) ? 'HIGH' : (n >= 0.33 ? 'MEDIUM' : 'LOW');
     final score = (n * 100).clamp(0, 100).toStringAsFixed(0);
     return (band, score);
+  }
+
+  // Top contributor labels (same heuristics as the drawer; swap with real weights later)
+  List<String> _topContributorLabels(Map<String, dynamic> p) {
+    double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
+
+    final hand = (p['HAND_m'] as num?) ?? 1.2;      // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7;  // %
+    final dist  = (p['dist_canal_m'] as num?) ?? 60; // meters
+    final drains = (p['drain_density'] as num?) ?? 1;
+
+    final lowElev   = clamp01((1.5 - hand) / 1.5);
+    final canalPx   = clamp01((100 - dist) / 100);
+    final poorDrain = clamp01((2 - drains) / 2);
+    final flatSlope = clamp01((1 - slope) / 1);
+
+    final Map<String, double> weights = {
+      'Low Elevation': lowElev,
+      'Canal Proximity': canalPx,
+      'Poor Drainage': poorDrain,
+      'Minimal Slope': flatSlope,
+    };
+
+    final ranked = weights.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return ranked.map((e) => e.key).take(5).toList();
+  }
+
+  Color _riskColorFromBand(String band) {
+    switch (band.toUpperCase()) {
+      case 'HIGH':
+        return const Color(0xFFDC2626);
+      case 'MEDIUM':
+        return const Color(0xFFEAB308);
+      default:
+        return const Color(0xFF16A34A);
+    }
   }
 
   @override
@@ -458,41 +500,103 @@ class _SegmentPopover extends StatelessWidget {
     final p = props;
     if (p == null) return const SizedBox.shrink();
 
-    final streetLabel = p["street_label"]?.toString() ?? '—';
-    final (band, score) = _riskOf(p);
+    final street = _nameOf(p);
+    final (band, score) = _riskOf(p); // score available if you want to show it
 
     return Card(
       elevation: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 420,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Title + actions
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Street name + risk level
                 Expanded(
-                  child: Text(
-                    streetLabel,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        street,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF004AAD), // indigo headline
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Text('Risk Level: ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w600,
+                              )),
+                          Text(
+                            band == '—'
+                                ? '—'
+                                : band[0].toUpperCase() +
+                                    band.substring(1).toLowerCase(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: _riskColorFromBand(band),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: onClose,
-                  tooltip: 'Close',
+                // Risk details pill + close
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: onWhy,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
+                        shape: const StadiumBorder(),
+                        side: const BorderSide(color: Color(0xFFD1D5DB)),
+                        backgroundColor: const Color(0xFFF3F4F6),
+                      ),
+                      icon: const Icon(Icons.place_outlined,
+                          size: 16, color: Color(0xFF374151)),
+                      label: const Text('Risk Details',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF374151))),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Close',
+                      onPressed: onClose,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(band, style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onWhy,
-              icon: const Icon(Icons.info_outline),
-              label: const Text('Why is this risky?'),
+
+            const SizedBox(height: 14),
+
+            // Contributor preview chips
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _topContributorLabels(p)
+                  .map((t) => _OutlineChip(label: t))
+                  .toList(),
             ),
           ],
         ),
@@ -500,6 +604,41 @@ class _SegmentPopover extends StatelessWidget {
     );
   }
 }
+
+// Simple outlined chip used below the headline
+class _OutlineChip extends StatelessWidget {
+  final String label;
+  const _OutlineChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: const ShapeDecoration(
+        color: Colors.white,
+        shape: StadiumBorder(
+          side: BorderSide(color: Color(0xFF6366F1)), // indigo outline
+        ),
+        shadows: [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF004AAD),
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
 
 class _ExplainabilityDrawer extends StatefulWidget {
   final Map<String, dynamic>? props;
