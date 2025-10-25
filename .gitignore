@@ -5,7 +5,8 @@ __pycache__/
 cache/
 .env
 
-pipeline/outputs/
+pipeline/outputs/*
+!pipeline/outputs/*_pu_features.*
 data/images/
 data/dem/
 data/annotation_v1_images/
