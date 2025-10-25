@@ -26,8 +26,8 @@ class RiskColors extends ThemeExtension<RiskColors> {
 }
 
 class SBAFNTheme {
-  static const _seed = Color(0xFF0B3A5B);
-  static const _footerNavy = Color(0xFF0A2F48);
+  static const _seed = Color(0xFF004aad);
+  static const _footerNavy = Color(0xFF004aad);
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(

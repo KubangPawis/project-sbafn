@@ -47,8 +47,6 @@ class _StoryMapPageState extends State<StoryMapPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('SBAFN Story Map'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
