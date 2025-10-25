@@ -39,6 +39,7 @@ dependencies:
   flutter_markdown: ^0.7.3
   csv: ^5.0.2 
   flutter_dotenv: ^5.1.0
+  google_fonts: ^6.3.2
 
 dev_dependencies:
   flutter_test:
