@@ -52,26 +52,28 @@ class _StoryMapPageState extends State<StoryMapPage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: Row(children: [
-              _ScenarioPill(
-                label: '30 mm/hr',
-                active: scenario == '30',
-                onTap: () => setState(() => scenario = '30'),
-              ),
-              const SizedBox(width: 6),
-              _ScenarioPill(
-                label: '50 mm/hr',
-                active: scenario == '50',
-                onTap: () => setState(() => scenario = '50'),
-              ),
-              const SizedBox(width: 6),
-              _ScenarioPill(
-                label: '100 mm/hr',
-                active: scenario == '100',
-                onTap: () => setState(() => scenario = '100'),
-              ),
-              const SizedBox(width: 8),
-            ]),
+            child: Row(
+              children: [
+                _ScenarioPill(
+                  label: '30 mm/hr',
+                  active: scenario == '30',
+                  onTap: () => setState(() => scenario = '30'),
+                ),
+                const SizedBox(width: 6),
+                _ScenarioPill(
+                  label: '50 mm/hr',
+                  active: scenario == '50',
+                  onTap: () => setState(() => scenario = '50'),
+                ),
+                const SizedBox(width: 6),
+                _ScenarioPill(
+                  label: '100 mm/hr',
+                  active: scenario == '100',
+                  onTap: () => setState(() => scenario = '100'),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
         ],
       ),
@@ -140,11 +142,16 @@ class _StoryMapPageState extends State<StoryMapPage> {
           Align(
             alignment: Alignment.centerRight,
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints.tightFor(width: _chaptersPaneWidth),
+              constraints: const BoxConstraints.tightFor(
+                width: _chaptersPaneWidth,
+              ),
               child: Container(
                 margin: const EdgeInsets.fromLTRB(
-                    _chaptersPaneMargin, 16, _chaptersPaneMargin, 16),
+                  _chaptersPaneMargin,
+                  16,
+                  _chaptersPaneMargin,
+                  16,
+                ),
                 child: story.scenes.isEmpty
                     ? const SizedBox()
                     : ListView.separated(
@@ -236,8 +243,11 @@ class _ScenarioPill extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
-  const _ScenarioPill(
-      {required this.label, required this.active, required this.onTap});
+  const _ScenarioPill({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +256,8 @@ class _ScenarioPill extends StatelessWidget {
         backgroundColor: active ? Colors.black : Colors.white,
         foregroundColor: active ? Colors.white : Colors.black,
         side: BorderSide(
-            color: active ? Colors.black : const Color(0xFFD1D5DB)),
+          color: active ? Colors.black : const Color(0xFFD1D5DB),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: const StadiumBorder(),
         textStyle: const TextStyle(fontSize: 13),
@@ -267,8 +278,7 @@ class _ChapterCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       elevation: isActive ? 10 : 2,
-      shadowColor:
-          isActive ? theme.colorScheme.primary.withOpacity(0.4) : null,
+      shadowColor: isActive ? theme.colorScheme.primary.withOpacity(0.4) : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -277,17 +287,20 @@ class _ChapterCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.radio_button_checked,
-                    size: 18,
-                    color: isActive
-                        ? theme.colorScheme.primary
-                        : theme.disabledColor),
+                Icon(
+                  Icons.radio_button_checked,
+                  size: 18,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : theme.disabledColor,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     scene.title,
-                    style: theme.textTheme.titleMedium!
-                        .copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (isActive)
@@ -296,16 +309,25 @@ class _ChapterCard extends StatelessWidget {
                       color: theme.colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       children: [
-                        Icon(Icons.flight_takeoff,
-                            size: 14, color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.flight_takeoff,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 4),
-                        Text('Flying',
-                            style: TextStyle(
-                                color: theme.colorScheme.primary, fontSize: 12)),
+                        Text(
+                          'Flying',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -327,26 +349,26 @@ class _FloodRiskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     Widget row(Color c, String title, String sub) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: c,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: c,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(sub, style: textTheme.bodySmall),
-              ],
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(sub, style: textTheme.bodySmall),
           ],
-        );
+        ),
+      ],
+    );
 
     return Card(
       elevation: 8,
@@ -362,20 +384,25 @@ class _FloodRiskCard extends StatelessWidget {
               children: [
                 Text(
                   'Flood Risk',
-                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 const Icon(Icons.info_outline, size: 16, color: Colors.black54),
               ],
             ),
             const SizedBox(height: 12),
-            row(const Color(0xFFE74C3C), 'High',   'Score: 67–100'),
+            row(const Color(0xFFE74C3C), 'High', 'Score: 67–100'),
             const SizedBox(height: 8),
-            row(const Color(0xFFE67E22), 'Medium', 'Score: 34–66'),
+            row(const Color(0xFFFFFF33), 'Medium', 'Score: 34–66'),
             const SizedBox(height: 8),
-            row(const Color(0xFF2F6EA5), 'Low',    'Score: 0–33'),
+            row(const Color(0xFF39FF14), 'Low', 'Score: 0–33'),
             const SizedBox(height: 12),
-            Text('0 = Lowest Risk • 100 = Highest Risk', style: textTheme.bodySmall),
+            Text(
+              '0 = Lowest Risk • 100 = Highest Risk',
+              style: textTheme.bodySmall,
+            ),
           ],
         ),
       ),
@@ -397,17 +424,14 @@ class _SegmentPopover extends StatelessWidget {
 
   // Best-effort name
   String _nameOf(Map<String, dynamic> p) {
-    return (p['name'] ??
-            p['road_name'] ??
-            p['street'] ??
-            p['highway'] ??
-            '—')
+    return (p['name'] ?? p['road_name'] ?? p['street'] ?? p['highway'] ?? '—')
         .toString();
   }
 
   // Risk (band + percent if available)
   (String band, String score) _riskOf(Map<String, dynamic> p) {
-    final evt = {'30': 'EVT_01', '50': 'EVT_03', '100': 'EVT_06'}[scenario] ?? 'EVT_03';
+    final evt =
+        {'30': 'EVT_01', '50': 'EVT_03', '100': 'EVT_06'}[scenario] ?? 'EVT_03';
     final tier = (p['tier_$evt'] ?? '').toString().toLowerCase();
     if (tier == 'low' || tier == 'medium' || tier == 'med' || tier == 'high') {
       final display = tier == 'med' ? 'MEDIUM' : tier.toUpperCase();
@@ -422,7 +446,7 @@ class _SegmentPopover extends StatelessWidget {
     if (n == null && q is num) n = q.toDouble();
     if (n == null && q is String) n = double.tryParse(q);
     if (n == null) return ('—', ''); // nothing
-    if (n > 1) n = n / 100.0;        // normalize 0..100 → 0..1
+    if (n > 1) n = n / 100.0; // normalize 0..100 → 0..1
 
     final band = (n >= 0.66) ? 'HIGH' : (n >= 0.33 ? 'MEDIUM' : 'LOW');
     final score = (n * 100).clamp(0, 100).toStringAsFixed(0);
@@ -451,8 +475,10 @@ class _SegmentPopover extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text('Segment ID: $segId',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    'Segment ID: $segId',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -467,11 +493,16 @@ class _SegmentPopover extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Risk ($scenario mm/hr)',
-                    style: Theme.of(context).textTheme.labelLarge),
+                Text(
+                  'Risk ($scenario mm/hr)',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
                 if (score.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
@@ -513,32 +544,44 @@ class _ExplainabilityDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      const Icon(Icons.place_outlined),
-                      const SizedBox(width: 8),
-                      const Text('Why is this segment risky?',
+                    Row(
+                      children: [
+                        const Icon(Icons.place_outlined),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Why is this segment risky?',
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      IconButton(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).maybePop()),
-                    ]),
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text('Segment ID: ${p['seg_id'] ?? '—'}'),
                     Text('Scenario: $scenario mm/hr'),
                     const SizedBox(height: 16),
 
-                    const Text('Probable Causes',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text(
+                      'Probable Causes',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 8),
 
                     const _CauseChip(text: 'Low drainage counts'),
                     const SizedBox(height: 8),
                     const _CauseChip(
-                        text:
-                            'Low relative elevation compared to adjacent streets'),
+                      text:
+                          'Low relative elevation compared to adjacent streets',
+                    ),
                     const SizedBox(height: 8),
                     const _CauseChip(text: 'High road width'),
 
@@ -585,10 +628,9 @@ class _Footer extends StatelessWidget {
       color: Theme.of(context).bottomAppBarTheme.color,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       child: DefaultTextStyle(
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall!
-            .copyWith(color: Colors.white.withOpacity(0.9)),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall!.copyWith(color: Colors.white.withOpacity(0.9)),
         child: Row(
           children: [
             Expanded(
@@ -596,12 +638,17 @@ class _Footer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text('Attribution',
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                    'Attribution',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   SizedBox(height: 4),
                   Text(
-                      'Map data © OpenStreetMap contributors, MapTiler • Flood data: DPWH, PAGASA, NAMRIA'),
+                    'Map data © OpenStreetMap contributors, MapTiler • Flood data: DPWH, PAGASA, NAMRIA',
+                  ),
                 ],
               ),
             ),
@@ -610,12 +657,17 @@ class _Footer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text('Disclaimer',
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                    'Disclaimer',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   SizedBox(height: 4),
                   Text(
-                      'Informational purposes only. For official flood risk assessments, consult local authorities.'),
+                    'Informational purposes only. For official flood risk assessments, consult local authorities.',
+                  ),
                 ],
               ),
             ),
@@ -624,9 +676,13 @@ class _Footer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text('Contact & Feedback',
-                      style:
-                          TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                    'Contact & Feedback',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   SizedBox(height: 4),
                   Text('sbafn@example.com'),
                 ],
