@@ -124,5 +124,7 @@ def fetch_elevation():
     print(f"[DONE] Wrote {AOI_PLACE_NAME} elevation data")
     print("[DONE] City-only rows:", len(df_city))
 
+    return df_city
+
 if __name__ == "__main__":
     fetch_elevation()
