@@ -5,6 +5,7 @@ __pycache__/
 cache/
 .env
 
+# Data Ingestion Pipeline
 pipeline/outputs/*
 !pipeline/outputs/*_pu_features.*
 data/images/
@@ -13,3 +14,7 @@ data/annotation_v1_images/
 data/meta/**/*local.csv
 data/meta/**/*ls.csv
 **/*.tif
+
+# Ultralytics
+models/**/runs
+*.pt
