@@ -8,6 +8,7 @@ import yaml
 from pipeline.modules.street_define import make_segments, make_corridors
 from pipeline.modules.node_lonlat_export import export_segment_lonlat
 from pipeline.modules.segments_elevation import join_elevation_to_segments
+from pipeline.modules.fetch_elevation import fetch_elevation
 
 # -----------------------
 
@@ -30,6 +31,7 @@ MANIFEST_OUT_DIR = cfg.get("mapillary_api", {}).get("manifest", {}).get("out_dir
 MANIFEST_NAME = cfg.get("mapillary_api", {}).get("manifest", {}).get("repo_manifest_name", "mapillary_manifest.csv")
 
 # CONFIGS: OUTPUT PATHS
+DATA_DIR = REPO_ROOT / "data"
 OUTPUT_DIR = PIPELINE_DIR / "outputs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -64,24 +66,33 @@ def main():
     (OUTPUT_DIR / f"{TARGET_ABBR}_segments.geojson").write_text(segments.to_json())
     (OUTPUT_DIR / f"{TARGET_ABBR}_corridors.geojson").write_text(corridors.to_json())
     
-    # CSV (for a quick check)
+    # [FILE EXPORT] Segments | Corridors
     segments.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_segments.csv", index=False)
     corridors.drop(columns=["geometry"], errors="ignore").to_csv(OUTPUT_DIR / f"{TARGET_ABBR}_corridors.csv", index=False)
 
     seg_geojson = OUTPUT_DIR / f"{TARGET_ABBR}_segments.geojson"
     seg_geojson.write_text(segments.to_json(), encoding="utf-8")
 
-    # elevation CSV path
-    elev_csv = OUTPUT_DIR / "manila_city_30m_grid_cityonly.csv"
+    # [DATA] Fetch elevation data | Load existing elevation data
+    elev_path = DATA_DIR / "dem" / "mnl_30m_grid.csv"
     out_csv  = OUTPUT_DIR / f"{TARGET_ABBR}_segments_with_elevation.csv"
 
-    join_elevation_to_segments(
-        segments_path=seg_geojson,
-        elev_csv_path=elev_csv,
-        out_csv_path=out_csv,
-        buf_m=15.0,
-        max_nn_m=60.0,
-    )
+    if elev_path.exists():
+        join_elevation_to_segments(
+            segments_gpd=segments,
+            elev_data=elev_path,
+            out_csv_path=out_csv,
+            buf_m=15.0,
+            max_nn_m=60.0,
+        )
+    else:
+        join_elevation_to_segments(
+            segments_gpd=segments,
+            elev_data=fetch_elevation(),
+            out_csv_path=out_csv,
+            buf_m=15.0,
+            max_nn_m=60.0,
+        )
     print(f"[elevation] wrote {out_csv}")
 
     nodes_wgs = nodes.to_crs(4326).reset_index() # CRS = WGS84

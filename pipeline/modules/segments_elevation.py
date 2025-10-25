@@ -73,12 +73,16 @@ def detect_cols(df: pd.DataFrame) -> Tuple[str, str, str]:
 # Core logic
 # -----------------------------
 
-def build_elev_gdf(csv_path: Path) -> gpd.GeoDataFrame:
-    df = pd.read_csv(csv_path)
-    lon_col, lat_col, elev_col = detect_cols(df)
-    df = df[[lon_col, lat_col, elev_col]].copy()
-    df.columns = ["lon", "lat", "elev"]
-    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["lon"], df["lat"], crs=WGS84))
+def build_elev_gdf(elev_data: pd.DataFrame | Path) -> gpd.GeoDataFrame:
+    if isinstance(elev_data, Path):
+        elev_df = pd.read_csv(elev_data)
+    else:
+        elev_df = elev_data
+
+    lon_col, lat_col, elev_col = detect_cols(elev_df)
+    elev_df = elev_df[[lon_col, lat_col, elev_col]].copy()
+    elev_df.columns = ["lon", "lat", "elev"]
+    gdf = gpd.GeoDataFrame(elev_df, geometry=gpd.points_from_xy(elev_df["lon"], elev_df["lat"], crs=WGS84))
     return gdf
 
 
@@ -115,15 +119,15 @@ def nearest_value(point_geom, elev_gdf_utm: gpd.GeoDataFrame, max_nn_m: float) -
 
 
 def join_elevation_to_segments(
-    segments_path: Path,
-    elev_csv_path: Path,
+    segments_gpd: gpd.GeoDataFrame,
+    elev_data: pd.DataFrame | Path,
     out_csv_path: Path,
     buf_m: float = 15.0,
     max_nn_m: float = 60.0,
 ) -> Path:
-    # 1) Load inputs
-    seg = gpd.read_file(segments_path)
-    elev = build_elev_gdf(elev_csv_path)
+    
+    seg = segments_gpd
+    elev = build_elev_gdf(elev_data)
 
     # 2) Project to metric
     seg_utm = seg.to_crs(UTM_MNL)
@@ -195,15 +199,15 @@ def join_elevation_to_segments(
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--segments", type=Path, required=True)
-    p.add_argument("--elev_csv", type=Path, required=True)
+    p.add_argument("--elev_data", type=Path, required=True)
     p.add_argument("--out_csv", type=Path, required=True)
     p.add_argument("--buf_m", type=float, default=15.0)
     p.add_argument("--max_nn_m", type=float, default=60.0)
     args = p.parse_args()
 
     path = join_elevation_to_segments(
-        segments_path=args.segments,
-        elev_csv_path=args.elev_csv,
+        segments_gpd=args.segments,
+        elev_data=args.elev_data,
         out_csv_path=args.out_csv,
         buf_m=args.buf_m,
         max_nn_m=args.max_nn_m,
