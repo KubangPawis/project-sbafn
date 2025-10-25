@@ -501,73 +501,120 @@ class _SegmentPopover extends StatelessWidget {
   }
 }
 
-class _ExplainabilityDrawer extends StatelessWidget {
+class _ExplainabilityDrawer extends StatefulWidget {
   final Map<String, dynamic>? props;
-  final String scenario;
+  final String scenario; // "30" | "50" | "100"
   const _ExplainabilityDrawer({required this.props, required this.scenario});
 
   @override
+  State<_ExplainabilityDrawer> createState() => _ExplainabilityDrawerState();
+}
+
+class _ExplainabilityDrawerState extends State<_ExplainabilityDrawer>
+    with TickerProviderStateMixin {
+  @override
   Widget build(BuildContext context) {
-    final p = props;
+    final p = widget.props;
+    final riskKey = 'risk_${widget.scenario}';
+    final risk = (p?[riskKey] as num?)?.toDouble() ?? 0.0;
+    final riskScore = (risk * 100).clamp(0, 100).round();
+    final riskBand = _riskBand(risk);
+
     return Drawer(
       width: 420,
       child: SafeArea(
         child: p == null
             ? const Center(child: Text('Select a segment to see details.'))
-            : Padding(
-                padding: const EdgeInsets.all(16),
+            : DefaultTabController(
+                length: 2,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.place_outlined),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Why is this segment risky?',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.place_outlined, size: 22),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Why is this segment risky?',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Understanding flood risk factors for this street segment',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text('Segment ID: ${p['seg_id'] ?? '—'}'),
-                    Text('Scenario: $scenario mm/hr'),
-                    const SizedBox(height: 16),
+                    const Divider(height: 1),
 
-                    const Text(
-                      'Probable Causes',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                    // Meta card
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _MetaCard(
+                        segmentId: p['seg_id']?.toString() ?? '—',
+                        location: _locationText(p),
+                        rainThreshold: '${widget.scenario} mm/hr',
+                        riskScore: '$riskScore/100 • ${riskBand.label}',
+                        riskColor: riskBand.color,
+                      ),
+                    ),
+
+                    // Tabs
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const TabBar(
+                          indicator: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          labelColor: Colors.black,
+                          unselectedLabelColor: Color(0xFF6B7280),
+                          labelStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          tabs: [
+                            Tab(text: 'Overview'),
+                            Tab(text: 'Context'),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    const _CauseChip(text: 'Low drainage counts'),
-                    const SizedBox(height: 8),
-                    const _CauseChip(
-                      text:
-                          'Low relative elevation compared to adjacent streets',
-                    ),
-                    const SizedBox(height: 8),
-                    const _CauseChip(text: 'High road width'),
-
-                    const SizedBox(height: 16),
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: Text(
-                          'These are indicative factors based on available data. '
-                          'For official flood risk assessments, consult local authorities.',
-                        ),
+                    // Body
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _OverviewTab(props: p, scenario: widget.scenario),
+                          _ContextTab(props: p),
+                        ],
                       ),
                     ),
                   ],
@@ -576,6 +623,375 @@ class _ExplainabilityDrawer extends StatelessWidget {
       ),
     );
   }
+
+  String _locationText(Map<String, dynamic> p) {
+    final bgy = p['barangay']?.toString();
+    final city = p['city']?.toString();
+    if (bgy != null && city != null) return 'Barangay $bgy, $city';
+    if (bgy != null) return 'Barangay $bgy';
+    return '—';
+  }
+}
+
+// ---------- Tabs ----------
+
+class _OverviewTab extends StatelessWidget {
+  final Map<String, dynamic> props;
+  final String scenario;
+  const _OverviewTab({required this.props, required this.scenario});
+
+  @override
+  Widget build(BuildContext context) {
+    // Compute contributor weights (0..1), then rank
+    final weights = _computeWeights(props);
+    final ranked = weights.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final topTags = ranked.take(4).map((e) => e.keyLabel).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        const Text(
+          'Top Contributors',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: topTags.map((t) => _TagChip(label: t)).toList(),
+        ),
+        const SizedBox(height: 16),
+
+        const Text(
+          'Contribution Weights',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        for (final e in ranked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _BarRow(label: e.keyLabel, value: e.value),
+          ),
+
+        const SizedBox(height: 16),
+        _InfoCard(
+          child: const Text(
+            'This street segment is at higher risk primarily due to low relative '
+            'elevation and proximity to drainage/canal networks. Values are demo-grade; '
+            'replace with your model outputs when available.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Heuristics mirrored from your earlier code; adjust as you get real drivers
+  Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
+    double clamp01(num v) => v.isNaN ? 0 : v.clamp(0, 1).toDouble();
+
+    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
+    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
+    final drains = (p['drain_density'] as num?) ?? 1;
+
+    final lowElev = clamp01((1.5 - hand) / 1.5);
+    final canalPx = clamp01((100 - dist) / 100);
+    final poorDrain = clamp01((2 - drains) / 2);
+    final flatSlope = clamp01((1 - slope) / 1);
+
+    // Normalize to 0..1 so bars sum visually
+    final raw = {
+      _Driver.lowElevation: lowElev,
+      _Driver.canalProximity: canalPx,
+      _Driver.poorDrainage: poorDrain,
+      _Driver.minimalSlope: flatSlope,
+    };
+    final sum = raw.values.fold<double>(0, (a, b) => a + b);
+    if (sum <= 0) return raw.map((k, v) => MapEntry(k, 0));
+    return raw.map((k, v) => MapEntry(k, v / sum));
+  }
+}
+
+class _ContextTab extends StatelessWidget {
+  final Map<String, dynamic> props;
+  const _ContextTab({required this.props});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        const Text('Metrics', style: TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        _KV('Relative elevation (HAND)', '${props['HAND_m'] ?? '—'} m'),
+        _KV('Slope', '${props['slope_pct'] ?? '—'} %'),
+        _KV('Distance to canal', '${props['dist_canal_m'] ?? '—'} m'),
+        _KV('Road class', '${props['road_class'] ?? '—'}'),
+        _KV('Drain density', '${props['drain_density'] ?? '—'} /100 m'),
+        const SizedBox(height: 16),
+        _InfoCard(
+          child: const Text(
+            'These are indicative factors based on available data. For official '
+            'flood risk assessments, consult local authorities.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------- Small widgets / theming helpers ----------
+
+class _MetaCard extends StatelessWidget {
+  final String segmentId;
+  final String location;
+  final String rainThreshold;
+  final String riskScore;
+  final Color riskColor;
+
+  const _MetaCard({
+    required this.segmentId,
+    required this.location,
+    required this.rainThreshold,
+    required this.riskScore,
+    required this.riskColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _KV('Segment ID', segmentId),
+          _KV('Location', location),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _Pill(
+                label: rainThreshold,
+                color: Colors.black,
+                inverted: true,
+                icon: Icons.water_drop,
+              ),
+              _Pill(
+                label: riskScore,
+                color: riskColor,
+                inverted: true,
+                icon: Icons.warning_amber_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  final String label;
+  const _TagChip({required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5EEF7),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFDBEAFE)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF1D4ED8)),
+      ),
+    );
+  }
+}
+
+class _BarRow extends StatelessWidget {
+  final String label;
+  final double value; // 0..1 normalized
+  const _BarRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (value * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$pct%',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 10,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: const Color(0xFFF3F4F6)),
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: value.clamp(0, 1),
+                  child: Container(color: const Color(0xFFEF4444)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final Widget child;
+  const _InfoCard({required this.child});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool inverted;
+  final IconData? icon;
+  const _Pill({
+    required this.label,
+    required this.color,
+    this.inverted = false,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = inverted ? color : Colors.white;
+    final fg = inverted ? Colors.white : color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: ShapeDecoration(
+        color: bg,
+        shape: StadiumBorder(side: BorderSide(color: color, width: 1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: fg),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KV extends StatelessWidget {
+  final String k;
+  final String v;
+  const _KV(this.k, this.v);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150,
+            child: Text(k, style: const TextStyle(color: Color(0xFF6B7280))),
+          ),
+          Expanded(
+            child: Text(v, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------- enums / helpers ----------
+
+enum _Driver { lowElevation, canalProximity, poorDrainage, minimalSlope }
+
+extension on MapEntry<_Driver, double> {
+  String get keyLabel {
+    switch (key) {
+      case _Driver.lowElevation:
+        return 'Low Elevation';
+      case _Driver.canalProximity:
+        return 'Canal Proximity';
+      case _Driver.poorDrainage:
+        return 'Poor Drainage';
+      case _Driver.minimalSlope:
+        return 'Minimal Slope';
+    }
+  }
+}
+
+class _RiskBand {
+  final String label;
+  final Color color;
+  const _RiskBand(this.label, this.color);
+}
+
+_RiskBand _riskBand(double risk01) {
+  if (risk01 >= 0.66) return const _RiskBand('HIGH', Color(0xFFDC2626));
+  if (risk01 >= 0.33) return const _RiskBand('MEDIUM', Color(0xFFEAB308));
+  return const _RiskBand('LOW', Color(0xFF22C55E));
 }
 
 class _CauseChip extends StatelessWidget {
