@@ -9,3 +9,12 @@ seed: 67
 patience: 20
 project: models/cv-yolo-model/runs
 name: y11s_baseline
+
+export:
+  enabled: true
+  format: onnx
+  imgsz: 640
+  dynamic: true
+  opset: 12
+  project: models/cv-yolo-model/exports
+  name: y11s_baseline
