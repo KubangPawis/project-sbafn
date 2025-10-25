@@ -117,6 +117,19 @@ class _StoryMapPageState extends State<StoryMapPage> {
                       ),
                     ),
 
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: const IgnorePointer(
+                          child: Image(
+                            image: AssetImage('assets/sbafn_logo.png'),
+                            height: 128,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     // Filters card (only Risk band)
                     Positioned(
                       left: 12,
@@ -461,13 +474,13 @@ class _SegmentPopover extends StatelessWidget {
   List<String> _topContributorLabels(Map<String, dynamic> p) {
     double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
 
-    final hand = (p['HAND_m'] as num?) ?? 1.2;      // meters
-    final slope = (p['slope_pct'] as num?) ?? 0.7;  // %
-    final dist  = (p['dist_canal_m'] as num?) ?? 60; // meters
+    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
+    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
     final drains = (p['drain_density'] as num?) ?? 1;
 
-    final lowElev   = clamp01((1.5 - hand) / 1.5);
-    final canalPx   = clamp01((100 - dist) / 100);
+    final lowElev = clamp01((1.5 - hand) / 1.5);
+    final canalPx = clamp01((100 - dist) / 100);
     final poorDrain = clamp01((2 - drains) / 2);
     final flatSlope = clamp01((1 - slope) / 1);
 
@@ -535,17 +548,19 @@ class _SegmentPopover extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Text('Risk Level: ',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF6B7280),
-                                fontWeight: FontWeight.w600,
-                              )),
+                          const Text(
+                            'Risk Level: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B7280),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           Text(
                             band == '—'
                                 ? '—'
                                 : band[0].toUpperCase() +
-                                    band.substring(1).toLowerCase(),
+                                      band.substring(1).toLowerCase(),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
@@ -565,17 +580,25 @@ class _SegmentPopover extends StatelessWidget {
                       onPressed: onWhy,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         shape: const StadiumBorder(),
                         side: const BorderSide(color: Color(0xFFD1D5DB)),
                         backgroundColor: const Color(0xFFF3F4F6),
                       ),
-                      icon: const Icon(Icons.place_outlined,
-                          size: 16, color: Color(0xFF374151)),
-                      label: const Text('Risk Details',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151))),
+                      icon: const Icon(
+                        Icons.place_outlined,
+                        size: 16,
+                        color: Color(0xFF374151),
+                      ),
+                      label: const Text(
+                        'Risk Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     IconButton(
@@ -594,9 +617,9 @@ class _SegmentPopover extends StatelessWidget {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: _topContributorLabels(p)
-                  .map((t) => _OutlineChip(label: t))
-                  .toList(),
+              children: _topContributorLabels(
+                p,
+              ).map((t) => _OutlineChip(label: t)).toList(),
             ),
           ],
         ),
@@ -638,7 +661,6 @@ class _OutlineChip extends StatelessWidget {
     );
   }
 }
-
 
 class _ExplainabilityDrawer extends StatefulWidget {
   final Map<String, dynamic>? props;
