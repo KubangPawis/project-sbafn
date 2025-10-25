@@ -138,25 +138,15 @@ def join_elevation_to_segments(
     # group points by segment
     grp = joined.dropna(subset=["segment_id"]).groupby("segment_id")["elev"]
 
-    # 4) Prepare output rows
-    out_rows = []
-
-    # optional fields present in the segments schema
-    opt_cols = [c for c in ["corridor_id","street_label","length_m","bridge","tunnel"] if c in seg.columns]
-
-    # index for quick segment lookup
+    # Index for quick segment lookup
     seg_utm = seg_utm.set_index("segment_id")
-
-    for seg_id, row in seg.iterrows():
+    rows = []
+    for _, row in seg.iterrows():
         segid = row.get("segment_id")
         if pd.isna(segid):
             continue
-        # base info
-        base = {"segment_id": segid}
-        for c in opt_cols:
-            base[c] = row.get(c)
 
-        # collect buffer stats if any
+        # buffer stats (or None)
         if segid in grp.groups:
             vals = grp.get_group(segid)
             stats = summarize(vals)
@@ -171,22 +161,21 @@ def join_elevation_to_segments(
         geom_utm = seg_utm.loc[segid].geometry
         start_pt = geom_utm.interpolate(0.0, normalized=True)
         end_pt = geom_utm.interpolate(1.0, normalized=True)
-        elev_start, dist_s = nearest_value(start_pt, elev_utm, max_nn_m)
-        elev_end, dist_e = nearest_value(end_pt, elev_utm, max_nn_m)
+        elev_start, _ = nearest_value(start_pt, elev_utm, max_nn_m)
+        elev_end, _ = nearest_value(end_pt, elev_utm, max_nn_m)
 
-        # grade
         length_m = row.get("length_m")
         try:
             length_m = float(length_m)
         except Exception:
             length_m = float(geom_utm.length)
-        if elev_start is not None and elev_end is not None and length_m and length_m > 0:
-            grade_pct = (elev_end - elev_start) / length_m * 100.0
-        else:
-            grade_pct = None
 
-        out_rows.append({
-            **base,
+        grade_pct = ((elev_end - elev_start) / length_m * 100.0) if (
+            elev_start is not None and elev_end is not None and length_m and length_m > 0
+        ) else None
+
+        rows.append({
+            "segment_id": segid,
             **stats,
             "elev_start": elev_start,
             "elev_end": elev_end,
@@ -195,7 +184,7 @@ def join_elevation_to_segments(
             "attach_method": method,
         })
 
-    out_df = pd.DataFrame(out_rows)
+    out_df = pd.DataFrame(rows)
     out_csv_path.parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(out_csv_path, index=False)
     return out_csv_path
