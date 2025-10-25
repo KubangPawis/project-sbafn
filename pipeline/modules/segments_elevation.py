@@ -121,7 +121,6 @@ def nearest_value(point_geom, elev_gdf_utm: gpd.GeoDataFrame, max_nn_m: float) -
 def join_elevation_to_segments(
     segments_gpd: gpd.GeoDataFrame,
     elev_data: pd.DataFrame | Path,
-    out_csv_path: Path,
     buf_m: float = 15.0,
     max_nn_m: float = 60.0,
 ) -> Path:
@@ -188,10 +187,12 @@ def join_elevation_to_segments(
             "attach_method": method,
         })
 
-    out_df = pd.DataFrame(rows)
-    out_csv_path.parent.mkdir(parents=True, exist_ok=True)
-    out_df.to_csv(out_csv_path, index=False)
-    return out_csv_path
+    metrics_df = pd.DataFrame(rows)
+
+    # 4) Merge ALL original segment attributes (except geometry) into the output
+    seg_attrs = seg.drop(columns=["geometry"], errors="ignore").copy()
+    out_df = metrics_df.merge(seg_attrs, on="segment_id", how="left")
+    return out_df
 
 # -----------------------------
 # CLI

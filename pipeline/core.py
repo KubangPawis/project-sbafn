@@ -75,25 +75,27 @@ def main():
 
     # [DATA] Fetch elevation data | Load existing elevation data
     elev_path = DATA_DIR / "dem" / "mnl_30m_grid.csv"
-    out_csv  = OUTPUT_DIR / f"{TARGET_ABBR}_segments_with_elevation.csv"
+    out_csv  = OUTPUT_DIR / f"{TARGET_ABBR}_pu_features.csv"
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     if elev_path.exists():
-        join_elevation_to_segments(
+        X_df = join_elevation_to_segments(
             segments_gpd=segments,
             elev_data=elev_path,
-            out_csv_path=out_csv,
             buf_m=15.0,
             max_nn_m=60.0,
         )
     else:
-        join_elevation_to_segments(
+        X_df = join_elevation_to_segments(
             segments_gpd=segments,
             elev_data=fetch_elevation(),
-            out_csv_path=out_csv,
             buf_m=15.0,
             max_nn_m=60.0,
         )
     print(f"[elevation] wrote {out_csv}")
+
+    # [DATA EXPORT] Export final feature dataset as csv
+    X_df.to_csv(out_csv, index=False)
 
     nodes_wgs = nodes.to_crs(4326).reset_index() # CRS = WGS84
     edges_wgs = edges.to_crs(4326)
