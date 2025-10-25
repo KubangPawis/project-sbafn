@@ -40,9 +40,9 @@ class _MapViewState extends State<MapView> {
   bool _styleReady = false;
 
   // --- Data & layers ---------------------------------------------------------
-  static const String streetsSrcId     = 'streets-src';
-  static const String streetsLyrId     = 'streets-lyr';
-  static const String streetsSelLyrId  = 'streets-selected';
+  static const String streetsSrcId = 'streets-src';
+  static const String streetsLyrId = 'streets-lyr';
+  static const String streetsSelLyrId = 'streets-selected';
 
   Map<String, dynamic>? _segmentsGeo; // parsed GeoJSON for picking
   String? _selectedSegId;
@@ -54,8 +54,8 @@ class _MapViewState extends State<MapView> {
   bool _hoverBusy = false;
 
   static const Map<String, String> _scenarioToEvt = {
-    '30' : 'EVT_01',
-    '50' : 'EVT_03',
+    '30': 'EVT_01',
+    '50': 'EVT_03',
     '100': 'EVT_06',
   };
 
@@ -67,8 +67,9 @@ class _MapViewState extends State<MapView> {
     );
 
     return MouseRegion(
-      cursor: _hoverClickable ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      onHover: _handleHover,
+      cursor: _hoverClickable
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: MapLibreMap(
         styleString: _styleUrl,
         onMapCreated: (c) => _map = c,
@@ -80,21 +81,6 @@ class _MapViewState extends State<MapView> {
         onMapClick: _onMapTap,
       ),
     );
-  }
-
-  Future<void> _handleHover(PointerHoverEvent e) async {
-    if (_hoverBusy || _map == null || !_styleReady || _segmentsGeo == null) return;
-    _hoverBusy = true;
-    try {
-      final pt = math.Point<double>(e.localPosition.dx, e.localPosition.dy);
-      final latLng = await _map!.toLatLng(pt);
-      final clickable = _pickNearestFeature(latLng, maxMeters: 20.0) != null;
-      if (clickable != _hoverClickable) {
-        setState(() => _hoverClickable = clickable);
-      }
-    } finally {
-      _hoverBusy = false;
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -129,39 +115,85 @@ class _MapViewState extends State<MapView> {
     final riskProp = 'risk_$scenario';
     final probProp = 'p_$evt';
 
-    const low  = '#7ED957';
-    const med  = '#F59E0B'; 
-    const high = '#EF4444'; 
-    const miss = '#CBD5E1'; 
+    const low = '#7ED957';
+    const med = '#F59E0B';
+    const high = '#EF4444';
+    const miss = '#CBD5E1';
 
     return [
       'case',
       ['has', tierProp],
-      ['match', ['downcase', ['to-string', ['get', tierProp]]],
-        'low',    low,
-        'medium', med,
-        'med',    med,
-        'high',   high,
-        miss
+      [
+        'match',
+        [
+          'downcase',
+          [
+            'to-string',
+            ['get', tierProp],
+          ],
+        ],
+        'low',
+        low,
+        'medium',
+        med,
+        'med',
+        med,
+        'high',
+        high,
+        miss,
       ],
 
-      ['let', 'raw',
-        ['coalesce',
-          ['to-number', ['get', riskProp]],
-          ['to-number', ['get', probProp]],
-          -1
+      [
+        'let',
+        'raw',
+        [
+          'coalesce',
+          [
+            'to-number',
+            ['get', riskProp],
+          ],
+          [
+            'to-number',
+            ['get', probProp],
+          ],
+          -1,
         ],
-        ['case',
-          ['<', ['var', 'raw'], 0], miss, // no data
-          ['step',
+        [
+          'case',
+          [
+            '<',
+            ['var', 'raw'],
+            0,
+          ],
+          miss, // no data
+          [
+            'step',
             // normalize raw to 0..1 if needed, clamp to [0,1]
-            ['min', 1, ['max', 0, ['case',
-              ['>', ['var', 'raw'], 1], ['/', ['var', 'raw'], 100.0],
-              ['var', 'raw']
-            ]]],
-            low, 0.33, med, 0.66, high
-          ]
-        ]
+            [
+              'min',
+              1,
+              [
+                'max',
+                0,
+                [
+                  'case',
+                  [
+                    '>',
+                    ['var', 'raw'],
+                    1,
+                  ],
+                  [
+                    '/',
+                    ['var', 'raw'],
+                    100.0,
+                  ],
+                  ['var', 'raw'],
+                ],
+              ],
+            ],
+            low, 0.33, med, 0.66, high,
+          ],
+        ],
       ],
     ];
   }
@@ -181,10 +213,15 @@ class _MapViewState extends State<MapView> {
       LineLayerProperties(
         lineColor: _streetColorExpr(widget.scenario),
         lineWidth: [
-          'interpolate', ['linear'], ['zoom'],
-          10, 1.4,
-          14, 2.2,
-          17, 3.0,
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          10,
+          1.4,
+          14,
+          2.2,
+          17,
+          3.0,
         ],
         lineOpacity: 0.95,
         lineCap: 'round',
@@ -208,32 +245,69 @@ class _MapViewState extends State<MapView> {
   // Selection
   // ---------------------------------------------------------------------------
   Future<void> _onMapTap(math.Point<double> point, LatLng latLng) async {
-    if (_map == null || !_styleReady || _segmentsGeo == null) return;
+    if (_map == null || !_styleReady) return;
 
-    const tolMeters = 80.0;
-    final hit = _pickNearestFeature(latLng, maxMeters: tolMeters);
+    // Prefer the renderer for picking (fast). Falls back to your CPU scan if needed.
+    try {
+      final feats = await _map!.queryRenderedFeatures(point, [
+        streetsLyrId,
+      ], null);
+      if (feats.isNotEmpty) {
+        final f = feats.first;
 
+        // Robustly get the segment id: prefer properties.seg_id, else properties.id, else feature id
+        final props =
+            (f.feature['properties'] as Map?)?.cast<String, dynamic>() ??
+            const {};
+        final segId =
+            (props['seg_id'] ?? props['id'] ?? f.id)?.toString() ?? '';
+
+        if (segId.isNotEmpty) {
+          _selectedSegId = segId;
+          await _setSelectedFilter(
+            segId,
+          ); // keep selection layer filtered to 1 feature
+
+          // Optional: zoom/focus
+          await _map!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15.5));
+
+          // Let the parent show details
+          widget.onFeatureSelected(
+            props.isNotEmpty ? props : {'seg_id': segId},
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // Some plugin versions may not support queryRenderedFeatures—fall back.
+    }
+
+    // Fallback: your existing nearest-line scanner (kept for safety)
+    final hit = _pickNearestFeature(latLng, maxMeters: 80.0);
     if (hit == null) {
       await _setSelectedFilter(null);
       _selectedSegId = null;
       return;
     }
-
-    _selectedSegId = hit['seg_id']?.toString();
+    _selectedSegId = (hit['seg_id'] ?? hit['id'])?.toString();
     await _setSelectedFilter(_selectedSegId);
-
-    // Focus in slightly
     await _map!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15.5));
-
-    // Let the page show the popover / drawer
     widget.onFeatureSelected(hit);
   }
 
   Future<void> _setSelectedFilter(String? segId) async {
     if (_map == null) return;
     final filter = (segId == null)
-        ? ['==', ['get', 'seg_id'], '__none__'] // matches nothing
-        : ['==', ['get', 'seg_id'], segId];
+        ? [
+            '==',
+            ['get', 'seg_id'],
+            '__none__',
+          ] // matches nothing
+        : [
+            '==',
+            ['get', 'seg_id'],
+            segId,
+          ];
     await _map!.setFilter(streetsSelLyrId, filter);
   }
 
@@ -245,7 +319,7 @@ class _MapViewState extends State<MapView> {
 
     final feats =
         (_segmentsGeo?['features'] as List?)?.cast<Map<String, dynamic>>() ??
-            const [];
+        const [];
 
     double best = double.infinity;
     Map<String, dynamic>? bestProps;
@@ -297,10 +371,8 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  LatLng _ll(List c) => LatLng(
-        (c[1] as num).toDouble(),
-        (c[0] as num).toDouble(),
-      );
+  LatLng _ll(List c) =>
+      LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble());
 
   double _pointToSegmentMeters(LatLng p, LatLng a, LatLng b) {
     const double mPerDegLat = 111320.0;
