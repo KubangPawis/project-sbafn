@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:project_sbafn/pages/map_view.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'story_controller.dart';
 import 'story_models.dart';
@@ -139,7 +140,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
                     ),
 
                     const Positioned(
-                      right: 12,
+                      left: 12,
                       bottom: 12,
                       child: _FloodRiskCard(),
                     ),
@@ -385,18 +386,19 @@ class _FloodRiskCard extends StatelessWidget {
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: 240,
-        padding: const EdgeInsets.all(16),
+        width: 200,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 6),
             Row(
               children: [
                 Text(
                   'Flood Risk',
                   style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -410,10 +412,6 @@ class _FloodRiskCard extends StatelessWidget {
             const SizedBox(height: 8),
             row(const Color(0xFF39FF14), 'Low', 'Score: 0–33'),
             const SizedBox(height: 12),
-            Text(
-              '0 = Lowest Risk • 100 = Highest Risk',
-              style: textTheme.bodySmall,
-            ),
           ],
         ),
       ),
