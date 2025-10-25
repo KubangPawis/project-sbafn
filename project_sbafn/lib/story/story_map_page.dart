@@ -458,8 +458,7 @@ class _SegmentPopover extends StatelessWidget {
     final p = props;
     if (p == null) return const SizedBox.shrink();
 
-    final segId = p['seg_id']?.toString() ?? '—';
-    final street = _nameOf(p);
+    final streetLabel = p["street_label"]?.toString() ?? '—';
     final (band, score) = _riskOf(p);
 
     return Card(
@@ -476,7 +475,7 @@ class _SegmentPopover extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Segment ID: $segId',
+                    streetLabel,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -485,30 +484,6 @@ class _SegmentPopover extends StatelessWidget {
                   onPressed: onClose,
                   tooltip: 'Close',
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(street),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Risk ($scenario mm/hr)',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                if (score.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text('$score / 100'),
-                  ),
               ],
             ),
             const SizedBox(height: 6),
