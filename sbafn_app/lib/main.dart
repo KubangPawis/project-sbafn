@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:project_sbafn/pages/landing_page.dart';
 import 'package:project_sbafn/story/story_map_page.dart';
-import 'package:project_sbafn/pages/home.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:project_sbafn/theme/sbafn_theme.dart';
@@ -25,11 +23,7 @@ class SBAFNApp extends StatelessWidget {
       darkTheme: SBAFNTheme.dark(),
       themeMode: ThemeMode.light,
       initialRoute: '/',
-      routes: {
-        '/':        (_) => const LandingPage(),         // new
-        '/story':   (_) => const StoryMapPage(),        // scrollytelling
-        '/explore': (_) => const StoryMapHomePage(),    // <-- your current home.dart map
-      },
+      routes: {'/': (_) => const StoryMapPage()},
     );
   }
 }
