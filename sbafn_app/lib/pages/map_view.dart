@@ -3,8 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/gestures.dart' show PointerHoverEvent;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'package:project_sbafn/story/story_models.dart';
