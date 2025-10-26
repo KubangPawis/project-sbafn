@@ -33,9 +33,11 @@ class _StoryMapPageState extends State<StoryMapPage> {
     story.loadAssets().then((_) => setState(() {}));
   }
 
-  void _applyChapter(int i) {
-    if (i == activeChapter) return;
-    setState(() => activeChapter = i);
+  void _onChapterTap(int i) {
+    setState(() {
+      storyStarted = true; // start the story on first tap
+      activeChapter = i; // go to the tapped chapter
+    });
   }
 
   @override
@@ -109,7 +111,12 @@ class _StoryMapPageState extends State<StoryMapPage> {
                       scenario: scenario,
                       isStoryStarted: storyStarted,
                       chapter: activeChapter,
-                      chapterCamera: cam,
+                      chapterCamera:
+                          (storyStarted &&
+                              activeChapter < story.scenes.length &&
+                              activeChapter >= 0)
+                          ? story.scenes[activeChapter].camera
+                          : null,
                       onFeatureSelected: (props) =>
                           setState(() => selectedProps = props),
                     ),
@@ -168,15 +175,10 @@ class _StoryMapPageState extends State<StoryMapPage> {
                         padding: const EdgeInsets.only(bottom: 120),
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemCount: story.scenes.length,
-                        itemBuilder: (_, i) => VisibilityDetector(
-                          key: Key('chapter-$i'),
-                          onVisibilityChanged: (info) {
-                            if (info.visibleFraction >= 0.6) _applyChapter(i);
-                          },
-                          child: _ChapterCard(
-                            scene: story.scenes[i],
-                            isActive: activeChapter == i,
-                          ),
+                        itemBuilder: (_, i) => _ChapterCard(
+                          scene: story.scenes[i],
+                          isActive: activeChapter == i,
+                          onTap: () => _onChapterTap(i),
                         ),
                       ),
               ),
@@ -279,71 +281,78 @@ class _ScenarioPill extends StatelessWidget {
 class _ChapterCard extends StatelessWidget {
   final Scene scene;
   final bool isActive;
-  const _ChapterCard({required this.scene, required this.isActive});
+  final VoidCallback? onTap;
+
+  const _ChapterCard({required this.scene, required this.isActive, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      clipBehavior: Clip.antiAlias,
       elevation: isActive ? 10 : 2,
       shadowColor: isActive ? theme.colorScheme.primary.withOpacity(0.4) : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.radio_button_checked,
-                  size: 18,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : theme.disabledColor,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    scene.title,
-                    style: theme.textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.w600,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.radio_button_checked,
+                    size: 18,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.disabledColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      scene.title,
+                      style: theme.textTheme.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                if (isActive)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.flight_takeoff,
-                          size: 14,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Flying',
-                          style: TextStyle(
+                  if (isActive)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.flight_takeoff,
+                            size: 14,
                             color: theme.colorScheme.primary,
-                            fontSize: 12,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            'Flying',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            MarkdownBody(data: scene.bodyMd),
-          ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              MarkdownBody(data: scene.bodyMd),
+            ],
+          ),
         ),
       ),
     );
