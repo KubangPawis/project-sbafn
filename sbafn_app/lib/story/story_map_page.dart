@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:project_sbafn/pages/map_view.dart';
 
@@ -155,7 +156,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
             ),
           ),
 
-          // Chapters panel
+          // [CHAPTERS PANEL]
           Align(
             alignment: Alignment.centerRight,
             child: ConstrainedBox(
@@ -169,18 +170,45 @@ class _StoryMapPageState extends State<StoryMapPage> {
                   _chaptersPaneMargin,
                   16,
                 ),
-                child: story.scenes.isEmpty
-                    ? const SizedBox()
-                    : ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 120),
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemCount: story.scenes.length,
-                        itemBuilder: (_, i) => _ChapterCard(
-                          scene: story.scenes[i],
-                          isActive: activeChapter == i,
-                          onTap: () => _onChapterTap(i),
+
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.location_pin),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12.0,
+                            horizontal: 8.0,
+                          ),
+                          child: Text(
+                            "Manila, Philippines",
+                            style: GoogleFonts.inter(
+                              color: Color(0xFF004AAD),
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    Expanded(
+                      child: story.scenes.isEmpty
+                          ? const SizedBox()
+                          : ListView.separated(
+                              padding: const EdgeInsets.only(bottom: 120),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 16),
+                              itemCount: story.scenes.length,
+                              itemBuilder: (_, i) => _ChapterCard(
+                                scene: story.scenes[i],
+                                isActive: activeChapter == i,
+                                onTap: () => _onChapterTap(i),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
