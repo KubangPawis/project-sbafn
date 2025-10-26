@@ -28,10 +28,12 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  // --- Style / Map -----------------------------------------------------------
-  late final String _maptilerKey =
-      dotenv.env['MAPTILER_KEY'] ??
-      const String.fromEnvironment('MAPTILER_KEY', defaultValue: '');
+  final _dartDefineEnv = const String.fromEnvironment(
+    'MAPTILER_KEY',
+    defaultValue: '',
+  );
+
+  late final String _maptilerKey = _dartDefineEnv;
 
   late final String _styleUrl =
       'https://api.maptiler.com/maps/dataviz/style.json?key=$_maptilerKey';
@@ -50,8 +52,7 @@ class _MapViewState extends State<MapView> {
   static const _manila = LatLng(14.5995, 120.9842);
 
   // --- Cursor hover (clickable cue) ------------------------------------------
-  bool _hoverClickable = false;
-  bool _hoverBusy = false;
+  final bool _hoverClickable = false;
 
   static const Map<String, String> _scenarioToEvt = {
     '30': 'EVT_01',
