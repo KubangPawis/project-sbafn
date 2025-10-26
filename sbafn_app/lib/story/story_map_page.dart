@@ -247,27 +247,54 @@ class _RainEventSimulatorCard extends StatelessWidget {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 360,
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ScenarioPill(
-              label: '30 mm/hr',
-              active: currentScenario == '30',
-              onTap: () => onChanged('30'),
+            // [ TITLE ]
+            Row(
+              children: [
+                Text(
+                  "Rainfall Simulator",
+                  style: GoogleFonts.inter(
+                    color: Color(0xFF004AAD),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            _ScenarioPill(
-              label: '50 mm/hr',
-              active: currentScenario == '50',
-              onTap: () => onChanged('50'),
-            ),
-            _ScenarioPill(
-              label: '100 mm/hr',
-              active: currentScenario == '100',
-              onTap: () => onChanged('100'),
+
+            // Spacer
+            SizedBox(height: 8),
+
+            // [ SCENARIO PILLS ]
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _ScenarioPill(
+                      label: '30 mm/hr',
+                      active: currentScenario == '30',
+                      onTap: () => onChanged('30'),
+                    ),
+                    _ScenarioPill(
+                      label: '50 mm/hr',
+                      active: currentScenario == '50',
+                      onTap: () => onChanged('50'),
+                    ),
+                    _ScenarioPill(
+                      label: '100 mm/hr',
+                      active: currentScenario == '100',
+                      onTap: () => onChanged('100'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
@@ -290,10 +317,10 @@ class _ScenarioPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        backgroundColor: active ? Colors.black : Colors.white,
-        foregroundColor: active ? Colors.white : Colors.black,
+        backgroundColor: active ? Color(0xFF004AAD) : Colors.white,
+        foregroundColor: active ? Colors.white : Color(0xFF004AAD),
         side: BorderSide(
-          color: active ? Colors.black : const Color(0xFFD1D5DB),
+          color: active ? Color(0xFF004AAD) : const Color(0xFFD1D5DB),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: const StadiumBorder(),
