@@ -118,7 +118,7 @@ class _MapViewState extends State<MapView> {
 
     const low = '#7ED957';
     const med = '#F59E0B';
-    const high = '#EF4444';
+    const high = '#F56969';
     const miss = '#CBD5E1';
 
     return [

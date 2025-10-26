@@ -401,7 +401,7 @@ class _FloodRiskCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            row(const Color(0xFFE74C3C), 'High', 'Score: 67–100'),
+            row(const Color(0xFFF56969), 'High', 'Score: 67–100'),
             const SizedBox(height: 8),
             row(const Color(0xFFFFFF33), 'Medium', 'Score: 34–66'),
             const SizedBox(height: 8),
@@ -491,7 +491,7 @@ class _SegmentPopover extends StatelessWidget {
   Color _riskColorFromBand(String band) {
     switch (band.toUpperCase()) {
       case 'HIGH':
-        return const Color(0xFFDC2626);
+        return const Color(0xFFF56969);
       case 'MEDIUM':
         return const Color(0xFFEAB308);
       default:
@@ -1141,7 +1141,7 @@ class _RiskBand {
 }
 
 _RiskBand _riskBand(double risk01) {
-  if (risk01 >= 0.66) return const _RiskBand('HIGH', Color(0xFFDC2626));
+  if (risk01 >= 0.66) return const _RiskBand('HIGH', Color(0xFFF56969));
   if (risk01 >= 0.33) return const _RiskBand('MEDIUM', Color(0xFFEAB308));
   return const _RiskBand('LOW', Color(0xFF22C55E));
 }
