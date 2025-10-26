@@ -70,6 +70,7 @@ flutter:
     - assets/segments.geojson  
     - assets/mnl_segments_with_elevation.csv
     - assets/mnl_segments_enriched.geojson
+    - assets/mnl_segments_enriched_populated.geojson
     - assets/sbafn_logo.png
     
   # An image asset can refer to one or more resolution-specific "variants", see

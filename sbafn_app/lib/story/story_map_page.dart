@@ -565,31 +565,34 @@ class _SegmentPopover extends StatelessWidget {
   }
 
   // Top contributor labels (same heuristics as the drawer; swap with real weights later)
-  List<String> _topContributorLabels(Map<String, dynamic> p) {
-    double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
+ List<String> _topContributorLabels(Map<String, dynamic> p) {
+  double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
 
-    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
-    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
-    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
-    final drains = (p['drain_density'] as num?) ?? 1;
+  final hand   = (p['HAND_m'] as num?) ?? 1.2;   // meters
+  final slope  = (p['slope_pct'] as num?) ?? 0.7; // %
+  final dist   = (p['dist_canal_m'] as num?) ?? 60; // meters
+  final drains = (p['drain_density'] as num?) ?? 1;
 
-    final lowElev = clamp01((1.5 - hand) / 1.5);
-    final canalPx = clamp01((100 - dist) / 100);
-    final poorDrain = clamp01((2 - drains) / 2);
-    final flatSlope = clamp01((1 - slope) / 1);
+  final raw = <String, double>{
+    'Low Elevation'   : clamp01((1.5 - hand) / 1.5),
+    'Canal Proximity' : clamp01((100 - dist) / 100),
+    'Poor Drainage'   : clamp01((2 - drains) / 2),
+    'Minimal Slope'   : clamp01((1 - slope) / 1),
+  };
 
-    final Map<String, double> weights = {
-      'Low Elevation': lowElev,
-      'Canal Proximity': canalPx,
-      'Poor Drainage': poorDrain,
-      'Minimal Slope': flatSlope,
-    };
+  // Normalize so chips align with drawer weights
+  final sum = raw.values.fold<double>(0, (a, b) => a + b);
+  final norm = sum > 0 ? raw.map((k, v) => MapEntry(k, v / sum)) : raw;
 
-    final ranked = weights.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+  const eps = 1e-6;
+  final ranked = norm.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
 
-    return ranked.map((e) => e.key).take(5).toList();
-  }
+  return ranked
+      .where((e) => e.value > eps)   // ⬅ only non-zero contributors
+      .map((e) => e.key)
+      .toList();
+}
 
   Color _riskColorFromBand(String band) {
     switch (band.toUpperCase()) {
@@ -878,14 +881,59 @@ class _ExplainabilityDrawerState extends State<_ExplainabilityDrawer>
       ),
     );
   }
-
   String _locationText(Map<String, dynamic> p) {
-    final bgy = p['barangay']?.toString();
-    final city = p['city']?.toString();
-    if (bgy != null && city != null) return 'Barangay $bgy, $city';
-    if (bgy != null) return 'Barangay $bgy';
-    return '—';
+    // Prefer a small area label if available, but never prefix with "Barangay"
+    String? area = _firstNonBlank(p, [
+      'brgy_name', 'barangay_name', 'barangay',
+      'suburb', 'neighbourhood', 'neighborhood',
+      'district', 'locality', 'village', 'purok', 'sitio',
+    ]);
+
+    String? city = _firstNonBlank(p, ['city', 'municipality', 'town', 'addr:city']);
+    String? prov = _firstNonBlank(p, ['province', 'region', 'state', 'addr:province']);
+
+    area = _clean(area);
+    city = _clean(city);
+    prov = _clean(prov);
+
+    // Hide NCR/Metro Manila since the city already implies it
+    final isNCR = (prov ?? '').toLowerCase().contains('ncr') ||
+                  (prov ?? '').toLowerCase().contains('national capital region') ||
+                  (prov ?? '').toLowerCase().contains('metro manila') ||
+                  (prov ?? '').toLowerCase().contains('metropolitan manila');
+
+    final parts = <String>[];
+    if (area != null && area != '—') parts.add(area);   // no "Barangay" prefix
+    if (city != null)               parts.add(city);
+    if (prov != null && !isNCR)     parts.add(prov);
+
+    return parts.isEmpty ? '—' : parts.join(', ');
   }
+
+  String? _firstNonBlank(Map<String, dynamic> p, List<String> keys) {
+    for (final k in keys) {
+      if (p.containsKey(k)) {
+        final v = p[k];
+        if (!_isBlank(v)) return v.toString();
+      }
+    }
+    return null;
+  }
+
+  String? _clean(Object? v) {
+    if (_isBlank(v)) return null;
+    final s = v.toString().trim();
+    // Convert common placeholders to null
+    if (s == '-' || s == '—' || s.toLowerCase() == 'null') return null;
+    return s;
+  }
+
+  bool _isBlank(Object? v) {
+    if (v == null) return true;
+    final s = v.toString().trim();
+    return s.isEmpty || s == '-' || s == '—' || s.toLowerCase() == 'null';
+  }
+
 }
 
 // ---------- Tabs ----------
@@ -895,6 +943,9 @@ class _OverviewTab extends StatelessWidget {
   final String scenario;
   const _OverviewTab({required this.props, required this.scenario});
 
+  // Treat anything <= eps as zero (avoids tiny floating rounding noise)
+  static const double _eps = 1e-6;
+
   @override
   Widget build(BuildContext context) {
     // Compute contributor weights (0..1), then rank
@@ -902,7 +953,11 @@ class _OverviewTab extends StatelessWidget {
     final ranked = weights.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final topTags = ranked.take(4).map((e) => e.keyLabel).toList();
+    // Show only non-zero contributors as chips (dynamic count)
+    final topTags = ranked
+        .where((e) => e.value > _eps)
+        .map((e) => e.keyLabel)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -924,6 +979,8 @@ class _OverviewTab extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
+
+        // Keep showing all drivers in the bars (including zeros)
         for (final e in ranked)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -945,27 +1002,38 @@ class _OverviewTab extends StatelessWidget {
 
   // Heuristics mirrored from your earlier code; adjust as you get real drivers
   Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
+    double _toNum(Object? v) {
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? double.nan;
+      return double.nan;
+    }
     double clamp01(num v) => v.isNaN ? 0 : v.clamp(0, 1).toDouble();
 
-    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
-    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
-    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
-    final drains = (p['drain_density'] as num?) ?? 1;
+    // Use robust parses with sensible fallbacks
+    final hand   = _toNum(p['HAND_m']);
+    final slope  = _toNum(p['slope_pct']);
+    final dist   = _toNum(p['dist_canal_m']);
+    final drains = _toNum(p['drain_density']);
 
-    final lowElev = clamp01((1.5 - hand) / 1.5);
-    final canalPx = clamp01((100 - dist) / 100);
-    final poorDrain = clamp01((2 - drains) / 2);
-    final flatSlope = clamp01((1 - slope) / 1);
+    final _hand   = hand.isNaN   ? 1.2 : hand;   // meters
+    final _slope  = slope.isNaN  ? 0.7 : slope;  // %
+    final _dist   = dist.isNaN   ? 60  : dist;   // meters
+    final _drains = drains.isNaN ? 1.0 : drains; // per 100 m
+
+    final lowElev   = clamp01((1.5 - _hand) / 1.5);
+    final canalPx   = clamp01((100 - _dist) / 100);
+    final poorDrain = clamp01((2 - _drains) / 2);
+    final flatSlope = clamp01((1 - _slope) / 1);
 
     // Normalize to 0..1 so bars sum visually
     final raw = {
-      _Driver.lowElevation: lowElev,
+      _Driver.lowElevation:   lowElev,
       _Driver.canalProximity: canalPx,
-      _Driver.poorDrainage: poorDrain,
-      _Driver.minimalSlope: flatSlope,
+      _Driver.poorDrainage:   poorDrain,
+      _Driver.minimalSlope:   flatSlope,
     };
     final sum = raw.values.fold<double>(0, (a, b) => a + b);
-    if (sum <= 0) return raw.map((k, v) => MapEntry(k, 0));
+    if (sum <= _eps) return raw.map((k, v) => MapEntry(k, 0.0));
     return raw.map((k, v) => MapEntry(k, v / sum));
   }
 }
