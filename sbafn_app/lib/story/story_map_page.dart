@@ -326,7 +326,7 @@ class _ScenarioPill extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontSize: 13),
+        textStyle: GoogleFonts.inter(fontSize: 14),
       ),
       onPressed: onTap,
       child: Text(label),
@@ -447,18 +447,17 @@ class _FloodRiskCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 6),
             Row(
               children: [
                 Text(
-                  'Risk Level',
+                  'Risk Levels:',
                   style: GoogleFonts.inter(
                     color: Color(0xFF004AAD),
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 12),
               ],
             ),
             const SizedBox(width: 12),
