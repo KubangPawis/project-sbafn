@@ -20,8 +20,69 @@ Project SBAFN is an explainable, **street-level flood-proneness** visualization 
 - **Scenario + Prioritization:** stress-test each street segment based on previous reported rainfall events (25/50/100 mm/hr rain).
 - **Actionable outputs:** export GeoJSON/CSV for LGU planning, work orders, and DRRM briefings.
 
-> For the specifics, refer to the overview in the Methodology section below or `docs/METHODOLOGY.md`.
+➡️ For the specifics, refer to the overview in the Methodology section below or `docs/METHODOLOGY.md`.
 _____________
+
+## 🚩 Get Started
+
+### View Deployment
+
+The latest version of Project SBAFN can be accessed through the following link:
+
+`https://project-sbafn.vercel.app`
+
+### Install Locally
+
+#### A. Prerequisites
+
+To setup this project locally, ensure you have:
+
+| Requirement   | Version                                               |
+| ------------- | ----------------------------------------------------- |
+| Python        | 3.11+                                                 |
+| Git           | 2.30+                                                 |
+| Flutter       | 3.35+                                                 |
+
+#### B. Setup
+
+The following indicates a quick step-by-step to run the project using **Windows PowerShell**.
+
+```bat
+REM 1) Clone the repo (pick one)
+git clone git@github.com:KubangPawis/project-sbafn.git
+git clone https://github.com/KubangPawis/project-sbafn.git
+
+REM 2) Go into the project folder
+cd /d C:\path\to\project-sbafn
+```
+
+**Run the app (Flutter web):**
+
+``` bat
+REM 1.) Navigate to the Flutter app directory
+cd sbafn_app
+
+REM 2.) Run the app
+flutter run -d chrome --dart-define=MAPTILER_KEY=<INSERT_API_KEY>
+```
+
+**(Optional) Rebuild data pipeline**
+Warning: large downloads; can take 24h+ on first run.
+
+``` bat
+REM 1) Create and activate a venv
+py -3.11 -m venv .venv
+.venv/Scripts/Activate.ps1
+
+REM 2) Install Python dependencies
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+
+REM 3) Run pipeline
+python -m pipeline.core
+```
+
+> Note: Large third-party data (e.g., Mapillary imagery) is not stored in this repo due to licensing and size. Use the provided scripts to fetch and prepare data, or download precomputed artifacts from the Releases page.
 
 ## 🎯 Methodology
 
@@ -73,7 +134,7 @@ Project SBAFN employs a hybrid geo implementation, employing both raster and vec
             <td>Road Classification</td>
         </tr>
         <tr>
-            <td>Road Width (to add)</td>
+            <td>Road Width</td>
         </tr>
     </body>
 </table>
@@ -82,28 +143,30 @@ Project SBAFN employs a hybrid geo implementation, employing both raster and vec
 
 ## 🤖 Models
 
-### Physical Flood-Vulnerability Indicators: Object Detection Model
+### Street-View Indicators: Object Detection
 
-* Architecture: YOLOv11
-* To be trained over ≈440k street-view images over the City of Manila
-  * Currently trained over a subset 1600 images for version 1.0
+* **Model**: YOLOv11
+* **Data:** Manila street-view corpus (**330k+** images); trained on a labeled subset for v1.0
+* **Output:** Physical indicator count per street segment
 
 ### Flood-Proneness Scoring: Positive-Unlabeled (PU) Model
 
-* Architecture: LightGBM
-* Trained over the static per-street features mapped to each reported rainfall event to train on scenario-based intuition
-* Outputs a flood-proneness probability score [0, 1]
+* **Model**: LightGBM
+* **Inputs:** Physical indicators, topography, road network, rainfall/reports
+* **Output:** calibrated flood-proneness probability score [0, 1]
 
 ➡️ Full model detailings: see [`docs/MODELS.md`](docs/MODELS.md)
+
+> **Disclaimer (Pilot):** Scores are model-derived estimates and may be inaccurate. **Not for emergency use**—verify with LGU/DRRM advisories.
 
 ## 🛣️ Roadmap
 
 Project SBAFN envisions to expand its feature to the following in future versions:
 
-* Expand to other Philippine cities
-* Context-based Story Map Generation
-* AI Assistant
-* Flood-aware Routing (for citizens)
+- Scale beyond Manila → Metro Manila → nationwide
+- Context-based Story Map generation
+- AI Assistant for natural-language queries
+- Flood-aware routing (citizen view)
 
 ## 🪪 License
 
