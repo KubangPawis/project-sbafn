@@ -173,24 +173,43 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.location_pin),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12.0,
-                            horizontal: 8.0,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Icon(Icons.location_pin, size: 32),
                           ),
-                          child: Text(
-                            "Manila, Philippines",
-                            style: GoogleFonts.inter(
-                              color: Color(0xFF004AAD),
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Manila, Philippines",
+                                  style: GoogleFonts.inter(
+                                    color: Color(0xFF004AAD),
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "Story",
+                                  style: GoogleFonts.inter(
+                                    color: Color(0x99004AAD),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Expanded(
                       child: story.scenes.isEmpty
