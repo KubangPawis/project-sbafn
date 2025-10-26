@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:visibility_detector/visibility_detector.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:project_sbafn/pages/map_view.dart';
 
 import 'story_controller.dart';
@@ -191,11 +191,13 @@ class _StoryMapPageState extends State<StoryMapPage> {
             left: 0,
             right: _chaptersPaneWidth + _chaptersPaneMargin + 24,
             child: Center(
-              child: _SegmentPopover(
-                props: selectedProps,
-                scenario: scenario,
-                onWhy: () => _scaffoldKey.currentState?.openEndDrawer(),
-                onClose: () => setState(() => selectedProps = null),
+              child: PointerInterceptor(
+                child: _SegmentPopover(
+                  props: selectedProps,
+                  scenario: scenario,
+                  onWhy: () => _scaffoldKey.currentState?.openEndDrawer(),
+                  onClose: () => setState(() => selectedProps = null),
+                ),
               ),
             ),
           ),
