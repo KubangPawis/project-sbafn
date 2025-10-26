@@ -224,7 +224,9 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> _addStreetsFromAsset() async {
-    final raw = await rootBundle.loadString('mnl_segments_enriched.geojson');
+    final raw = await rootBundle.loadString(
+      'assets/mnl_segments_enriched.geojson',
+    );
     _segmentsGeo = json.decode(raw) as Map<String, dynamic>;
 
     await _map!.addSource(
