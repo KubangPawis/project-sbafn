@@ -948,7 +948,13 @@ class _OverviewTab extends StatelessWidget {
     final ranked = weights.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final topTags = ranked.take(4).map((e) => e.keyLabel).toList();
+    const double eps = 1e-6;
+
+    final topTags = ranked
+        .where((e) => e.value > eps)
+        .map((e) => e.keyLabel)
+        .toList();
+
     final summary = _buildSummary(ranked, props, scenario);
 
     return ListView(
@@ -1046,7 +1052,6 @@ class _OverviewTab extends StatelessWidget {
     return parts.join(' ');
   }
 
-  // ---------- same weight calc you already had ----------
   Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
     double clamp01(num v) => v.isNaN ? 0 : v.clamp(0, 1).toDouble();
 
