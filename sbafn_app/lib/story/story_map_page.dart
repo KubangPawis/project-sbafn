@@ -935,7 +935,6 @@ class _ExplainabilityDrawerState extends State<_ExplainabilityDrawer>
   }
 
 }
-
 // ---------- Tabs ----------
 
 class _OverviewTab extends StatelessWidget {
@@ -943,29 +942,20 @@ class _OverviewTab extends StatelessWidget {
   final String scenario;
   const _OverviewTab({required this.props, required this.scenario});
 
-  // Treat anything <= eps as zero (avoids tiny floating rounding noise)
-  static const double _eps = 1e-6;
-
   @override
   Widget build(BuildContext context) {
-    // Compute contributor weights (0..1), then rank
     final weights = _computeWeights(props);
     final ranked = weights.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    // Show only non-zero contributors as chips (dynamic count)
-    final topTags = ranked
-        .where((e) => e.value > _eps)
-        .map((e) => e.keyLabel)
-        .toList();
+    final topTags = ranked.take(4).map((e) => e.keyLabel).toList();
+    final summary = _buildSummary(ranked, props, scenario);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        const Text(
-          'Top Contributors',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+        const Text('Top Contributors',
+            style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -974,13 +964,9 @@ class _OverviewTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        const Text(
-          'Contribution Weights',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+        const Text('Contribution Weights',
+            style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-
-        // Keep showing all drivers in the bars (including zeros)
         for (final e in ranked)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -989,51 +975,99 @@ class _OverviewTab extends StatelessWidget {
 
         const SizedBox(height: 16),
         _InfoCard(
-          child: const Text(
-            'This street segment is at higher risk primarily due to low relative '
-            'elevation and proximity to drainage/canal networks. Values are demo-grade; '
-            'replace with your model outputs when available.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          child: Text(
+            summary,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
           ),
         ),
       ],
     );
   }
 
-  // Heuristics mirrored from your earlier code; adjust as you get real drivers
-  Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
-    double _toNum(Object? v) {
-      if (v is num) return v.toDouble();
-      if (v is String) return double.tryParse(v) ?? double.nan;
-      return double.nan;
+  // ---------- SUMMARY BUILDER (dynamic text) ----------
+  String _buildSummary(
+    List<MapEntry<_Driver, double>> ranked,
+    Map<String, dynamic> p,
+    String scenario,
+  ) {
+    if (ranked.isEmpty) {
+      return 'No clear drivers identified for this segment at $scenario mm/hr.';
     }
+
+    String pct(double v) => '${(v * 100).round()}%';
+
+    String metricLine(_Driver d) {
+      switch (d) {
+        case _Driver.lowElevation:
+          final hand = (p['HAND_m'] as num?)?.toDouble();
+          return (hand == null) ? 'low relative elevation'
+              : 'low relative elevation (HAND ≈ ${hand.toStringAsFixed(1)} m)';
+        case _Driver.canalProximity:
+          final dist = (p['dist_canal_m'] as num?)?.toDouble();
+          return (dist == null) ? 'proximity to canals'
+              : 'proximity to canals (≈ ${dist.toStringAsFixed(0)} m)';
+        case _Driver.poorDrainage:
+          final dens = (p['drain_density'] as num?)?.toDouble();
+          return (dens == null) ? 'limited drainage capacity'
+              : 'limited drainage capacity (density ≈ ${dens.toStringAsFixed(1)}/100 m)';
+        case _Driver.minimalSlope:
+          final slope = (p['slope_pct'] as num?)?.toDouble();
+          return (slope == null) ? 'minimal slope (flat terrain)'
+              : 'minimal slope (≈ ${slope.toStringAsFixed(1)}%)';
+      }
+    }
+
+    final top1 = ranked[0];
+    final top2 = ranked.length > 1 ? ranked[1] : null;
+    final top3 = ranked.length > 2 ? ranked[2] : null;
+
+    final parts = <String>[
+      'At $scenario mm/hr, the segment’s risk is driven mainly by '
+          '${top1.keyLabel.toLowerCase()} (${pct(top1.value)}).'
+    ];
+
+    if ((top2?.value ?? 0) >= 0.15) {
+      parts.add('Secondary influence: ${top2!.keyLabel.toLowerCase()} '
+          '(${pct(top2.value)}).');
+    }
+    if ((top3?.value ?? 0) >= 0.15) {
+      parts.add('Additional factor: ${top3!.keyLabel.toLowerCase()} '
+          '(${pct(top3.value)}).');
+    }
+
+    // Add metric context for the top 1–2 drivers
+    final contextBits = <String>[metricLine(top1.key)];
+    if (top2 != null && top2.value >= 0.15) contextBits.add(metricLine(top2.key));
+
+    parts.add('Context: ${contextBits.join('; ')}.');
+
+      parts.add('This assessment represents initial evaluation as results may exhibit inaccuracies. Reliability expected to improve as models are refined.');
+
+    return parts.join(' ');
+  }
+
+  // ---------- same weight calc you already had ----------
+  Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
     double clamp01(num v) => v.isNaN ? 0 : v.clamp(0, 1).toDouble();
 
-    // Use robust parses with sensible fallbacks
-    final hand   = _toNum(p['HAND_m']);
-    final slope  = _toNum(p['slope_pct']);
-    final dist   = _toNum(p['dist_canal_m']);
-    final drains = _toNum(p['drain_density']);
+    final hand = (p['HAND_m'] as num?) ?? 1.2;      // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7;  // %
+    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
+    final drains = (p['drain_density'] as num?) ?? 1;
 
-    final _hand   = hand.isNaN   ? 1.2 : hand;   // meters
-    final _slope  = slope.isNaN  ? 0.7 : slope;  // %
-    final _dist   = dist.isNaN   ? 60  : dist;   // meters
-    final _drains = drains.isNaN ? 1.0 : drains; // per 100 m
+    final lowElev = clamp01((1.5 - hand) / 1.5);
+    final canalPx = clamp01((100 - dist) / 100);
+    final poorDrain = clamp01((2 - drains) / 2);
+    final flatSlope = clamp01((1 - slope) / 1);
 
-    final lowElev   = clamp01((1.5 - _hand) / 1.5);
-    final canalPx   = clamp01((100 - _dist) / 100);
-    final poorDrain = clamp01((2 - _drains) / 2);
-    final flatSlope = clamp01((1 - _slope) / 1);
-
-    // Normalize to 0..1 so bars sum visually
     final raw = {
-      _Driver.lowElevation:   lowElev,
+      _Driver.lowElevation: lowElev,
       _Driver.canalProximity: canalPx,
-      _Driver.poorDrainage:   poorDrain,
-      _Driver.minimalSlope:   flatSlope,
+      _Driver.poorDrainage: poorDrain,
+      _Driver.minimalSlope: flatSlope,
     };
     final sum = raw.values.fold<double>(0, (a, b) => a + b);
-    if (sum <= _eps) return raw.map((k, v) => MapEntry(k, 0.0));
+    if (sum <= 0) return raw.map((k, v) => MapEntry(k, 0));
     return raw.map((k, v) => MapEntry(k, v / sum));
   }
 }
