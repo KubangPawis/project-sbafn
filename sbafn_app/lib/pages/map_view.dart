@@ -126,7 +126,7 @@ class _MapViewState extends State<MapView> {
     // [INITIAL ZOOM IN]
     await _map!.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: _manila, zoom: 13, bearing: 18.0, tilt: 45.0),
+        CameraPosition(target: _manila, zoom: 13.5, bearing: 18.0, tilt: 45.0),
       ),
     );
 
