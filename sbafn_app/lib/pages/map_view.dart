@@ -95,16 +95,26 @@ class _MapViewState extends State<MapView> {
   Future<void> _onStyleLoaded() async {
     if (_map == null) return;
 
-    await _addStreetsFromAsset(); // base colored layer
+    await _addStreetsFromAsset();
 
-    // Selected overlay layer (above base layer). Start hidden via filter.
+    // [ON TAP - SELECTED STREET SEGMENT HIGHLIGHT]
     await _map!.addLineLayer(
       streetsSrcId,
       streetsSelLyrId,
       const LineLayerProperties(
-        lineColor: '#0EA5E9',
-        lineWidth: 6.0,
-        lineOpacity: 1.0,
+        lineColor: '#006EFF',
+        lineOpacity: 0.5,
+        lineWidth: [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          10,
+          12.0,
+          14,
+          18.0,
+          17,
+          24.0,
+        ],
         lineCap: 'round',
         lineJoin: 'round',
       ),
