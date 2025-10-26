@@ -114,6 +114,49 @@ class _StoryMapPageState extends State<StoryMapPage> {
                     ),
                   ),
 
+                  // [GUIDE TEXT FOR NAVIGATION]
+                  Positioned(
+                    left: 24,
+                    top: 24,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 4,
+                      children: [
+                        // "Try to click on a street"
+                        Row(
+                          children: [
+                            Icon(Icons.info, color: Color(0xFF004AAD)),
+                            SizedBox(width: 8),
+                            Text(
+                              "Try to click on a street.",
+                              style: GoogleFonts.inter(
+                                color: Color(0x99004AAD),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // "Try to click on a street"
+                        Row(
+                          children: [
+                            Icon(Icons.info, color: Color(0xFF004AAD)),
+                            SizedBox(width: 8),
+                            Text(
+                              "Try to click on a story panel.",
+                              style: GoogleFonts.inter(
+                                color: Color(0x99004AAD),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // [RAINFALL EVENT SIMULATOR PANEL]
                   Positioned(
                     left: 12,
