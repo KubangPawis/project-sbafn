@@ -117,17 +117,19 @@ class _StoryMapPageState extends State<StoryMapPage> {
                   // [RAINFALL EVENT SIMULATOR PANEL]
                   Positioned(
                     left: 12,
-                    top: 12,
-                    child: _RainEventSimulatorCard(
-                      currentScenario: scenario,
-                      onChanged: (v) => setState(() => scenario = v),
-                    ),
-                  ),
-
-                  const Positioned(
-                    left: 12,
                     bottom: 12,
-                    child: _FloodRiskCard(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _RainEventSimulatorCard(
+                          currentScenario: scenario,
+                          onChanged: (v) => setState(() => scenario = v),
+                        ),
+
+                        SizedBox(height: 8.0),
+                        _FloodRiskCard(),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -418,24 +420,19 @@ class _FloodRiskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    Widget row(Color c, String title, String sub) => Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    Widget riskChip(Color c, String title) => Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: c,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
+        Container(width: 14, height: 14, decoration: BoxDecoration(color: c)),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(sub, style: textTheme.bodySmall),
+            Text(
+              title,
+              // style: GoogleFonts.inter(color: Color(0xFF004AAD), fontSize: 14),
+              style: GoogleFonts.inter(color: c, fontSize: 14),
+            ),
           ],
         ),
       ],
@@ -443,11 +440,10 @@ class _FloodRiskCard extends StatelessWidget {
 
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -455,22 +451,23 @@ class _FloodRiskCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Flood Risk',
-                  style: textTheme.titleSmall?.copyWith(
+                  'Risk Level',
+                  style: GoogleFonts.inter(
+                    color: Color(0xFF004AAD),
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Icon(Icons.info_outline, size: 16, color: Colors.black54),
               ],
             ),
-            const SizedBox(height: 12),
-            row(const Color(0xFFF56969), 'High', 'Score: 67–100'),
-            const SizedBox(height: 8),
-            row(const Color(0xFFFFFF33), 'Medium', 'Score: 34–66'),
-            const SizedBox(height: 8),
-            row(const Color(0xFF39FF14), 'Low', 'Score: 0–33'),
-            const SizedBox(height: 12),
+            const SizedBox(width: 12),
+            riskChip(const Color(0xFFF56969), 'High'),
+            const SizedBox(width: 8),
+            riskChip(const Color(0xFFF59E0B), 'Mid'),
+            const SizedBox(width: 8),
+            riskChip(const Color(0xFF6BB34D), 'Low'),
+            const SizedBox(width: 12),
           ],
         ),
       ),
