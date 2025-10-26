@@ -11,6 +11,7 @@ import 'package:project_sbafn/story/story_models.dart';
 
 class MapView extends StatefulWidget {
   final String scenario;
+  final bool isStoryStarted;
   final int chapter;
   final CameraSpec? chapterCamera;
   final ValueChanged<Map<String, dynamic>> onFeatureSelected;
@@ -18,6 +19,7 @@ class MapView extends StatefulWidget {
   const MapView({
     super.key,
     required this.scenario,
+    required this.isStoryStarted,
     required this.chapter,
     required this.onFeatureSelected,
     this.chapterCamera,
@@ -76,7 +78,12 @@ class _MapViewState extends State<MapView> {
         onMapCreated: (c) => _map = c,
         onStyleLoadedCallback: _onStyleLoaded,
         myLocationEnabled: false,
-        initialCameraPosition: const CameraPosition(target: _manila, zoom: 12),
+        initialCameraPosition: const CameraPosition(
+          target: _manila,
+          zoom: 8,
+          bearing: 0,
+          tilt: 0,
+        ),
         rotateGesturesEnabled: true,
         tiltGesturesEnabled: true,
         onMapClick: _onMapTap,
@@ -107,6 +114,15 @@ class _MapViewState extends State<MapView> {
     await _setSelectedFilter(null);
 
     _styleReady = true;
+
+    // [INITIAL ZOOM IN]
+    await _map!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: _manila, zoom: 13, bearing: 18.0, tilt: 45.0),
+      ),
+    );
+
+    // [CHAPTER CAMERA]
     await _applyChapterCamera();
   }
 
@@ -399,7 +415,7 @@ class _MapViewState extends State<MapView> {
   // Scrollytelling camera
   // ---------------------------------------------------------------------------
   Future<void> _applyChapterCamera() async {
-    if (_map == null || !_styleReady) return;
+    if (_map == null || !_styleReady || !widget.isStoryStarted) return;
 
     if (widget.chapterCamera != null) {
       final cam = widget.chapterCamera!;

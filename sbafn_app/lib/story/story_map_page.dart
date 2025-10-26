@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:project_sbafn/pages/map_view.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'story_controller.dart';
 import 'story_models.dart';
@@ -19,6 +18,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
   String scenario = '50'; // "30" | "50" | "100"
   String riskFilter = 'all'; // "all" | "low" | "med" | "high"
+  bool storyStarted = false; // Handle for story start
   int activeChapter = 0;
 
   Map<String, dynamic>? selectedProps;
@@ -107,6 +107,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
                   Positioned.fill(
                     child: MapView(
                       scenario: scenario,
+                      isStoryStarted: storyStarted,
                       chapter: activeChapter,
                       chapterCamera: cam,
                       onFeatureSelected: (props) =>
