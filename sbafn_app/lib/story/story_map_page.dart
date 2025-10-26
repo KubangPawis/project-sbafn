@@ -18,7 +18,6 @@ class _StoryMapPageState extends State<StoryMapPage> {
   final StoryController story = StoryController();
 
   String scenario = '50'; // "30" | "50" | "100"
-  String riskFilter = 'all'; // "all" | "low" | "med" | "high"
   bool storyStarted = false; // Handle for story start
   int activeChapter = 0;
 
@@ -54,28 +53,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: Row(
-              children: [
-                _ScenarioPill(
-                  label: '30 mm/hr',
-                  active: scenario == '30',
-                  onTap: () => setState(() => scenario = '30'),
-                ),
-                const SizedBox(width: 6),
-                _ScenarioPill(
-                  label: '50 mm/hr',
-                  active: scenario == '50',
-                  onTap: () => setState(() => scenario = '50'),
-                ),
-                const SizedBox(width: 6),
-                _ScenarioPill(
-                  label: '100 mm/hr',
-                  active: scenario == '100',
-                  onTap: () => setState(() => scenario = '100'),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
+            child: Row(children: []),
           ),
         ],
       ),
@@ -136,13 +114,13 @@ class _StoryMapPageState extends State<StoryMapPage> {
                     ),
                   ),
 
-                  // Filters card (only Risk band)
+                  // [RAINFALL EVENT SIMULATOR PANEL]
                   Positioned(
                     left: 12,
                     top: 12,
-                    child: _RiskFiltersCard(
-                      current: riskFilter,
-                      onChanged: (v) => setState(() => riskFilter = v),
+                    child: _RainEventSimulatorCard(
+                      currentScenario: scenario,
+                      onChanged: (v) => setState(() => scenario = v),
                     ),
                   ),
 
@@ -256,10 +234,13 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
 // ---------- UI pieces ----------
 
-class _RiskFiltersCard extends StatelessWidget {
-  final String current; // "all" | "low" | "med" | "high"
+class _RainEventSimulatorCard extends StatelessWidget {
+  final String currentScenario; // "30" | "50" | "100"
   final ValueChanged<String> onChanged;
-  const _RiskFiltersCard({required this.current, required this.onChanged});
+  const _RainEventSimulatorCard({
+    required this.currentScenario,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -267,33 +248,30 @@ class _RiskFiltersCard extends StatelessWidget {
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: 280,
+        width: 360,
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _chip('All', 'all'),
-                _chip('Low', 'low'),
-                _chip('Med', 'med'),
-                _chip('High', 'high'),
-              ],
+            _ScenarioPill(
+              label: '30 mm/hr',
+              active: currentScenario == '30',
+              onTap: () => onChanged('30'),
+            ),
+            _ScenarioPill(
+              label: '50 mm/hr',
+              active: currentScenario == '50',
+              onTap: () => onChanged('50'),
+            ),
+            _ScenarioPill(
+              label: '100 mm/hr',
+              active: currentScenario == '100',
+              onTap: () => onChanged('100'),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _chip(String label, String value) {
-    final selected = current == value;
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onChanged(value),
     );
   }
 }
