@@ -66,13 +66,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/manila_land_only.geojson
-    - assets/manila_land_only_highres.geojson
-    - assets/story.json              
-    - assets/segments.geojson                
-    - assets/mnl_segments.geojson            
+    - assets/story.json        
+    - assets/segments.geojson  
     - assets/mnl_segments_with_elevation.csv
-    - assets/env/.env
+    - assets/mnl_segments_enriched.geojson
     - assets/sbafn_logo.png
     
   # An image asset can refer to one or more resolution-specific "variants", see
