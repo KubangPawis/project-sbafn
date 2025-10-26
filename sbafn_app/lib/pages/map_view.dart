@@ -134,72 +134,114 @@ class _MapViewState extends State<MapView> {
     await _applyChapterCamera();
   }
 
-
-List<double> _thresholdsFor(String scenario) {
-  // [low→med, med→high]; heavier rain = lower thresholds = more red/orange
-  switch (scenario) {
-    case '30':  return [0.42, 0.72];  // conservative
-    case '50':  return [0.32, 0.58];  // baseline
-    case '100': return [0.18, 0.40];  // aggressive
-    default:    return [0.33, 0.66];
+  List<double> _thresholdsFor(String scenario) {
+    // [low→med, med→high]; heavier rain = lower thresholds = more red/orange
+    switch (scenario) {
+      case '30':
+        return [0.42, 0.72]; // conservative
+      case '50':
+        return [0.32, 0.58]; // baseline
+      case '100':
+        return [0.18, 0.40]; // aggressive
+      default:
+        return [0.33, 0.66];
+    }
   }
-}
 
-dynamic _streetColorExpr(String scenario) {
-  final evt = _scenarioToEvt[scenario] ?? 'EVT_03';
-  final tierProp = 'tier_$evt';
-  final riskProp = 'risk_$scenario';
-  final probProp = 'p_$evt';
-  final th = _thresholdsFor(scenario);
+  dynamic _streetColorExpr(String scenario) {
+    final evt = _scenarioToEvt[scenario] ?? 'EVT_03';
+    final tierProp = 'tier_$evt';
+    final riskProp = 'risk_$scenario';
+    final probProp = 'p_$evt';
+    final th = _thresholdsFor(scenario);
 
-  const low = '#7ED957';
-  const med = '#F59E0B';
-  const high = '#F56969';
-  const miss = '#CBD5E1';
+    const low = '#7ED957';
+    const med = '#F59E0B';
+    const high = '#F56969';
+    const miss = '#CBD5E1';
 
-  return [
-    'let','raw',
-    [
-      'coalesce',
-      // 1) risk_${scenario}
-      ['to-number', ['get', riskProp]],
-      // 2) p_EVT_* (normalize 0..100 to 0..1 if needed)
+    return [
+      'let', 'raw',
       [
-        'let','q',['to-number',['get', probProp]],
-        ['case',
-          ['>', ['var','q'], 1], ['/', ['var','q'], 100.0],
-          ['var','q']
-        ]
+        'coalesce',
+        // 1) risk_${scenario}
+        [
+          'to-number',
+          ['get', riskProp],
+        ],
+        // 2) p_EVT_* (normalize 0..100 to 0..1 if needed)
+        [
+          'let',
+          'q',
+          [
+            'to-number',
+            ['get', probProp],
+          ],
+          [
+            'case',
+            [
+              '>',
+              ['var', 'q'],
+              1,
+            ],
+            [
+              '/',
+              ['var', 'q'],
+              100.0,
+            ],
+            ['var', 'q'],
+          ],
+        ],
+        // 3) tier_EVT_* → numeric midpoints
+        [
+          'match',
+          [
+            'downcase',
+            [
+              'to-string',
+              ['get', tierProp],
+            ],
+          ],
+          'low', 0.20,
+          'medium', 0.50,
+          'med', 0.50,
+          'high', 0.80,
+          -1, // sentinel = missing
+        ],
       ],
-      // 3) tier_EVT_* → numeric midpoints
-      [
-        'match',
-        ['downcase', ['to-string', ['get', tierProp]]],
-        'low',   0.20,
-        'medium',0.50,
-        'med',   0.50,
-        'high',  0.80,
-        -1  // sentinel = missing
-      ]
-    ],
 
-    // If missing, paint gray. Else clamp to [0,1] and bucket per scenario.
-    ['case',
-      ['<', ['var','raw'], 0], miss,
-      ['step',
-        ['min', 1, ['max', 0, ['var','raw']]],
-        low,
-        th[0], med,
-        th[1], high
-      ]
-    ]
-  ];
-}
+      // If missing, paint gray. Else clamp to [0,1] and bucket per scenario.
+      [
+        'case',
+        [
+          '<',
+          ['var', 'raw'],
+          0,
+        ],
+        miss,
+        [
+          'step',
+          [
+            'min',
+            1,
+            [
+              'max',
+              0,
+              ['var', 'raw'],
+            ],
+          ],
+          low,
+          th[0],
+          med,
+          th[1],
+          high,
+        ],
+      ],
+    ];
+  }
 
   Future<void> _addStreetsFromAsset() async {
-    final raw = await rootBundle.loadString(
-      'assets/mnl_segments_enriched_populated.geojson',
-    );
+    final raw = await rootBundle.loadString('assets/mnl_segments_data.geojson');
     _segmentsGeo = json.decode(raw) as Map<String, dynamic>;
 
     await _map!.addSource(
