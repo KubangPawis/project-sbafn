@@ -1181,25 +1181,25 @@ class _Footer extends StatelessWidget {
         ).textTheme.bodySmall!.copyWith(color: Colors.white.withOpacity(0.9)),
         child: Row(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    'Attribution',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Map data © OpenStreetMap contributors, MapTiler • Flood data: DPWH, PAGASA, NAMRIA',
-                  ),
-                ],
-              ),
-            ),
+            // Expanded(
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     mainAxisSize: MainAxisSize.min,
+            //     children: const [
+            //       Text(
+            //         'Attribution',
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontWeight: FontWeight.w600,
+            //         ),
+            //       ),
+            //       SizedBox(height: 4),
+            //       Text(
+            //         'Map data © OpenStreetMap contributors, MapTiler • Flood data: DPWH, PAGASA, NAMRIA',
+            //       ),
+            //     ],
+            //   ),
+            // ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1214,7 +1214,7 @@ class _Footer extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Informational purposes only. For official flood risk assessments, consult local authorities.',
+                    "Info is provided as-is from early-stage models; may contain errors. Use responsibly; consult LGU/DRRM.",
                   ),
                 ],
               ),
@@ -1225,14 +1225,14 @@ class _Footer extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: const [
                   Text(
-                    'Contact & Feedback',
+                    'Contact Us',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text('sbafn@example.com'),
+                  Text('sbafn.team@gmail.com'),
                 ],
               ),
             ),
