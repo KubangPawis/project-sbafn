@@ -25,8 +25,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
   static const double _chaptersPaneWidth = 430;
   static const double _chaptersPaneMargin = 8;
-  static const double _framePadding = 12;
-  static const double _footerReserve = 96;
+  static const double _framePadding = 0;
 
   @override
   void initState() {
@@ -47,6 +46,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
     return Scaffold(
       key: _scaffoldKey,
+      bottomNavigationBar: _Footer(),
       appBar: AppBar(
         actions: [
           Padding(
@@ -89,63 +89,60 @@ class _StoryMapPageState extends State<StoryMapPage> {
             left: _framePadding,
             top: _framePadding,
             right: _chaptersPaneWidth + _chaptersPaneMargin + _framePadding,
-            bottom: _footerReserve,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 12,
-                      offset: Offset(0, 4),
+            bottom: 0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: MapView(
+                      scenario: scenario,
+                      chapter: activeChapter,
+                      chapterCamera: cam,
+                      onFeatureSelected: (props) =>
+                          setState(() => selectedProps = props),
                     ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: MapView(
-                        scenario: scenario,
-                        chapter: activeChapter,
-                        chapterCamera: cam,
-                        onFeatureSelected: (props) =>
-                            setState(() => selectedProps = props),
-                      ),
-                    ),
+                  ),
 
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: const IgnorePointer(
-                          child: Image(
-                            image: AssetImage('assets/sbafn_logo.png'),
-                            height: 128,
-                          ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: const IgnorePointer(
+                        child: Image(
+                          image: AssetImage('assets/sbafn_logo.png'),
+                          height: 128,
                         ),
                       ),
                     ),
+                  ),
 
-                    // Filters card (only Risk band)
-                    Positioned(
-                      left: 12,
-                      top: 12,
-                      child: _RiskFiltersCard(
-                        current: riskFilter,
-                        onChanged: (v) => setState(() => riskFilter = v),
-                      ),
+                  // Filters card (only Risk band)
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: _RiskFiltersCard(
+                      current: riskFilter,
+                      onChanged: (v) => setState(() => riskFilter = v),
                     ),
+                  ),
 
-                    const Positioned(
-                      left: 12,
-                      bottom: 12,
-                      child: _FloodRiskCard(),
-                    ),
-                  ],
-                ),
+                  const Positioned(
+                    left: 12,
+                    bottom: 12,
+                    child: _FloodRiskCard(),
+                  ),
+                ],
               ),
             ),
           ),
@@ -187,7 +184,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
 
           // Segment popover (simplified)
           Positioned(
-            bottom: _footerReserve + 64,
+            bottom: 32,
             left: 0,
             right: _chaptersPaneWidth + _chaptersPaneMargin + 24,
             child: Center(
@@ -199,8 +196,6 @@ class _StoryMapPageState extends State<StoryMapPage> {
               ),
             ),
           ),
-
-          const Positioned(left: 0, right: 0, bottom: 0, child: _Footer()),
         ],
       ),
     );
