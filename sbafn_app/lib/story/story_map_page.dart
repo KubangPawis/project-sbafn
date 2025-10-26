@@ -125,7 +125,7 @@ class _StoryMapPageState extends State<StoryMapPage> {
                   Align(
                     alignment: Alignment.topCenter,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 5),
+                      padding: const EdgeInsets.only(top: 20),
                       child: const IgnorePointer(
                         child: Image(
                           image: AssetImage('assets/sbafn_logo.png'),
