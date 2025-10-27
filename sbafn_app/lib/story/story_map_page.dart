@@ -1164,7 +1164,14 @@ class _ContextTab extends StatelessWidget {
         _KVMetrics('Distance to canal', '${props['dist_canal_m'] ?? '—'} m'),
         _KVMetrics('Road class', '${props['road_class'] ?? '—'}'),
         _KVMetrics('Drain density', '${props['drain_density'] ?? '—'} /100 m'),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
+        Text(
+          'Disclaimer',
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
         _InfoCard(
           child: Text(
             'These are indicative factors based on available data. For official '
