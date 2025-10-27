@@ -1,27 +1,29 @@
 ![SBAFN Banner Image](docs/images/docu_banner.png)
 
-# Project SBAFN (Street-based Assessment for Flood-prone Neighborhoods)
+# Project SBAFN: *Street-based Assessment for Flood-prone Neighborhoods*
 
 ## 📖 Overview
 
-Project SBAFN is an explainable, **street-level flood-proneness** visualization and decision-support app for Philippine cities. It visually communicates per-street, evidence-backed flood insights that planners can act on.
+[Project SBAFN](https://project-sbafn.vercel.app) is an explainable, street-level flood-proneness visualization and decision-support app for Philippine cities. It visually communicates per-street, evidence-backed flood insights that planners can act on.
 
+> [!NOTE]
 > This project aims to supersede **Project NOAH**, the Philippines' state-of-the-art initiative that provides area-based hazard overview, highlighting flood hazard zones at the national level. SBAFN offers the next step by covering the existing gaps of NOAH, by showing the street-level specifics of why floods happen, and give the explainability that was long needed for actual, effective decision making.
+
+<br>
 
 ![SBAFN Map Snapshot](docs/images/docu_map.png)
 
-## 🔎 What SBAFN Adds
 
-- **Street-segment granularity:** scores every road segment (green/yellow/red) instead of broad barangay/city polygons.
-- **Explainability panel:** shows *why* a specific street scores that way. It includes insights about:
-  - Physical indicators (e.g., drainage grates, curb inlets, proximity to canals)
-  - Topography (e.g., elevation, relative elevation, slope)
-  - Road Data (e.g., width/class/intersections)
-- **Scenario + Prioritization:** stress-test each street segment based on previous reported rainfall events (25/50/100 mm/hr rain).
-- **Actionable outputs:** export GeoJSON/CSV for LGU planning, work orders, and DRRM briefings.
+### What Project SBAFN Adds
+
+- **Street-Level Granularity -** scores every road segment (green/yellow/red) instead of broad barangay/city polygons.
+- **Explainability -** shows *why* a specific street scores that way. It includes insights about street-level physical flood proneness indicators, topography data, road data, all mapped to historical flood events as basis.
+- **Scenario + Prioritization -** stress-test each street segment based on previous reported rainfall events (30/50/100 mm/hr rain).
+- **Actionable Insights -** Upon full release of Project SBAFN, outputs can be used for LGU planning, work orders, and DRRM briefings.
 
 ➡️ For the specifics, refer to the overview in the Methodology section below or `docs/METHODOLOGY.md`.
-_____________
+
+---
 
 ## 🚩 Get Started
 
@@ -30,6 +32,8 @@ _____________
 The latest version of Project SBAFN can be accessed through the following link:
 
 `https://project-sbafn.vercel.app`
+
+---
 
 ### Install Locally
 
@@ -67,7 +71,8 @@ flutter run -d chrome --dart-define=MAPTILER_KEY=<INSERT_API_KEY>
 ```
 
 **(Optional) Rebuild data pipeline**
-Warning: large downloads; can take 24h+ on first run.
+
+To rebuild the data pipeline, follow the set of steps listed below. Large third-party data (e.g., Mapillary imagery) is not stored in this repo due to licensing and size. Use the provided scripts to fetch and prepare data.
 
 ``` bat
 REM 1) Create and activate a venv
@@ -82,7 +87,8 @@ REM 3) Run pipeline
 python -m pipeline.core
 ```
 
-> Note: Large third-party data (e.g., Mapillary imagery) is not stored in this repo due to licensing and size. Use the provided scripts to fetch and prepare data, or download precomputed artifacts from the Releases page.
+> [!WARNING]
+> Rebuilding the pipeline require large downloads. Downloading all raw feature files can take about **≈24+ hours** to complete. Instead, a pre-built features dataset was used to supply the model for the prediction.
 
 ## 🎯 Methodology
 
@@ -167,6 +173,7 @@ Project SBAFN envisions to expand its feature to the following in future version
 - Context-based Story Map generation
 - AI Assistant for natural-language queries
 - Flood-aware routing (citizen view)
+- Data pipeline scheduling for frequent risk update
 
 ## 🪪 License
 
