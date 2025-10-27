@@ -2,7 +2,7 @@
 
 # Project SBAFN: *Street-based Assessment for Flood-prone Neighborhoods*
 
-## 📖 Overview
+### 📖 Overview
 
 [Project SBAFN](https://project-sbafn.vercel.app) is an explainable, street-level flood-proneness visualization and decision-support app for Philippine cities. It visually communicates per-street, evidence-backed flood insights that planners can act on.
 
@@ -25,19 +25,17 @@
 
 ---
 
-## 🚩 Get Started
-
-### View Deployment
+## 🏁 Get Started
 
 The latest version of Project SBAFN can be accessed through the following link:
 
-`https://project-sbafn.vercel.app`
+[https://project-sbafn.vercel.app](https://project-sbafn.vercel.app)
 
 ---
 
-### Install Locally
+### 🧑‍💻 Install Locally
 
-#### A. Prerequisites
+#### Prerequisites
 
 To setup this project locally, ensure you have:
 
@@ -47,7 +45,7 @@ To setup this project locally, ensure you have:
 | Git           | 2.30+                                                 |
 | Flutter       | 3.35+                                                 |
 
-#### B. Setup
+#### Setup
 
 The following indicates a quick step-by-step to run the project using **Windows PowerShell**.
 
@@ -90,11 +88,13 @@ python -m pipeline.core
 > [!WARNING]
 > Rebuilding the pipeline require large downloads. Downloading all raw feature files can take about **≈24+ hours** to complete. Instead, a pre-built features dataset was used to supply the model for the prediction.
 
+---
+
 ## 🎯 Methodology
 
 ![Project SBAFN's Methodology Diagram](docs/images/methods_diagram.png)
 
-### A. 🌊 Flood-Proneness Indicators
+#### 🌊 Flood-Proneness Indicators
 
 Project SBAFN employs a hybrid geo implementation, employing both raster and vector geodata. Specifically through the following metrics:
 
@@ -147,6 +147,8 @@ Project SBAFN employs a hybrid geo implementation, employing both raster and vec
 
 ➡️ Full definitions, examples, and edge cases: see [`docs/INDICATORS.md`](docs/INDICATORS.md)
 
+---
+
 ## 🤖 Models
 
 ### Street-View Indicators: Object Detection
@@ -165,6 +167,8 @@ Project SBAFN employs a hybrid geo implementation, employing both raster and vec
 
 > **Disclaimer (Pilot):** Scores are model-derived estimates and may be inaccurate. **Not for emergency use**—verify with LGU/DRRM advisories.
 
+---
+
 ## 🛣️ Roadmap
 
 Project SBAFN envisions to expand its feature to the following in future versions:
@@ -175,13 +179,18 @@ Project SBAFN envisions to expand its feature to the following in future version
 - Flood-aware routing (citizen view)
 - Data pipeline scheduling for frequent risk update
 
+---
+
 ## 🪪 License
 
 * **Code**: Apache-2.0 (see `LICENSE`).
 * **Street View Imagery**: Mapillary imagery is not included in this repo and is governed by Mapillary’s Terms of Use and attribution rules. We only store metadata and our own annotations.
 - **Elevation data (DEM):** Contains modified Copernicus DEM (GLO-30). © European Union, 1995–2025, produced using Copernicus data and information funded by the European Union — accessed via the AWS Open Data Registry. See Copernicus terms of use and license.
 
+> [!NOTE]
 > This repository does **not** grant rights to any third-party datasets. Use of Mapillary/Copernicus materials must follow their respective licenses and terms.
+
+---
 
 ## Team
 
