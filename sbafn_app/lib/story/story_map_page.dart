@@ -7,6 +7,8 @@ import 'package:project_sbafn/pages/map_view.dart';
 import 'story_controller.dart';
 import 'story_models.dart';
 
+const primary = Color(0xFF004AAD);
+
 class StoryMapPage extends StatefulWidget {
   const StoryMapPage({super.key});
   @override
@@ -372,7 +374,7 @@ class _ScenarioPill extends StatelessWidget {
         textStyle: GoogleFonts.inter(fontSize: 14),
       ),
       onPressed: onTap,
-      child: Text(label),
+      child: Text(label, style: GoogleFonts.inter()),
     );
   }
 }
@@ -413,9 +415,7 @@ class _ChapterCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       scene.title,
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                     ),
                   ),
                   if (isActive)
@@ -438,7 +438,7 @@ class _ChapterCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Flying',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: theme.colorScheme.primary,
                               fontSize: 12,
                             ),
@@ -565,34 +565,34 @@ class _SegmentPopover extends StatelessWidget {
   }
 
   // Top contributor labels (same heuristics as the drawer; swap with real weights later)
- List<String> _topContributorLabels(Map<String, dynamic> p) {
-  double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
+  List<String> _topContributorLabels(Map<String, dynamic> p) {
+    double clamp01(num? v) => (v ?? 0).clamp(0, 1).toDouble();
 
-  final hand   = (p['HAND_m'] as num?) ?? 1.2;   // meters
-  final slope  = (p['slope_pct'] as num?) ?? 0.7; // %
-  final dist   = (p['dist_canal_m'] as num?) ?? 60; // meters
-  final drains = (p['drain_density'] as num?) ?? 1;
+    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
+    final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
+    final drains = (p['drain_density'] as num?) ?? 1;
 
-  final raw = <String, double>{
-    'Low Elevation'   : clamp01((1.5 - hand) / 1.5),
-    'Canal Proximity' : clamp01((100 - dist) / 100),
-    'Poor Drainage'   : clamp01((2 - drains) / 2),
-    'Minimal Slope'   : clamp01((1 - slope) / 1),
-  };
+    final raw = <String, double>{
+      'Low Elevation': clamp01((1.5 - hand) / 1.5),
+      'Canal Proximity': clamp01((100 - dist) / 100),
+      'Poor Drainage': clamp01((2 - drains) / 2),
+      'Minimal Slope': clamp01((1 - slope) / 1),
+    };
 
-  // Normalize so chips align with drawer weights
-  final sum = raw.values.fold<double>(0, (a, b) => a + b);
-  final norm = sum > 0 ? raw.map((k, v) => MapEntry(k, v / sum)) : raw;
+    // Normalize so chips align with drawer weights
+    final sum = raw.values.fold<double>(0, (a, b) => a + b);
+    final norm = sum > 0 ? raw.map((k, v) => MapEntry(k, v / sum)) : raw;
 
-  const eps = 1e-6;
-  final ranked = norm.entries.toList()
-    ..sort((a, b) => b.value.compareTo(a.value));
+    const eps = 1e-6;
+    final ranked = norm.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-  return ranked
-      .where((e) => e.value > eps)   // ⬅ only non-zero contributors
-      .map((e) => e.key)
-      .toList();
-}
+    return ranked
+        .where((e) => e.value > eps) // ⬅ only non-zero contributors
+        .map((e) => e.key)
+        .toList();
+  }
 
   Color _riskColorFromBand(String band) {
     switch (band.toUpperCase()) {
@@ -636,7 +636,7 @@ class _SegmentPopover extends StatelessWidget {
                         street,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF004AAD), // indigo headline
@@ -645,9 +645,9 @@ class _SegmentPopover extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Risk Level: ',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               color: Color(0xFF6B7280),
                               fontWeight: FontWeight.w600,
@@ -658,7 +658,7 @@ class _SegmentPopover extends StatelessWidget {
                                 ? '—'
                                 : band[0].toUpperCase() +
                                       band.substring(1).toLowerCase(),
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: _riskColorFromBand(band),
@@ -689,9 +689,9 @@ class _SegmentPopover extends StatelessWidget {
                         size: 16,
                         color: Color(0xFF374151),
                       ),
-                      label: const Text(
+                      label: Text(
                         'Risk Details',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF374151),
                         ),
@@ -749,7 +749,7 @@ class _OutlineChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: GoogleFonts.inter(
           color: Color(0xFF004AAD),
           fontWeight: FontWeight.w600,
           fontSize: 13,
@@ -782,130 +782,171 @@ class _ExplainabilityDrawerState extends State<_ExplainabilityDrawer>
       width: 420,
       child: SafeArea(
         child: p == null
-            ? const Center(child: Text('Select a segment to see details.'))
+            ? Center(
+                child: Text(
+                  'Select a segment to see details.',
+                  style: GoogleFonts.inter(),
+                ),
+              )
             : DefaultTabController(
                 length: 2,
-                child: Column(
-                  children: [
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.place_outlined, size: 22),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Why is this segment risky?',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Understanding flood risk factors for this street segment',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                ),
-                              ],
-                            ),
+                child: Container(
+                  color: Colors.white70,
+                  child: Column(
+                    children: [
+                      // Header
+                      Container(
+                        color: primary,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.of(context).maybePop(),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.props?["street_label"],
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () =>
+                                    Navigator.of(context).maybePop(),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-
-                    // Meta card
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _MetaCard(
-                        segmentId: p['seg_id']?.toString() ?? '—',
-                        location: _locationText(p),
-                        rainThreshold: '${widget.scenario} mm/hr',
-                        riskScore: '$riskScore/100 • ${riskBand.label}',
-                        riskColor: riskBand.color,
-                      ),
-                    ),
-
-                    // Tabs
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const TabBar(
-                          indicator: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+
+                      // Meta card
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          top: 16,
+                          right: 16,
+                          bottom: 32,
+                        ),
+                        child: _MetaCard(
+                          segmentId: p['seg_id']?.toString() ?? '—',
+                          location: _locationText(p),
+                          rainThreshold: '${widget.scenario} mm/hr',
+                          riskScore: '$riskScore/100 • ${riskBand.label}',
+                          riskColor: riskBand.color,
+                        ),
+                      ),
+
+                      // Tabs
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          labelColor: Colors.black,
-                          unselectedLabelColor: Color(0xFF6B7280),
-                          labelStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                          child: TabBar(
+                            indicator: BoxDecoration(
+                              color: primary,
+                              borderRadius: BorderRadius.circular(0),
+                              border: Border.all(color: primary, width: 2),
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            labelColor: Colors.white,
+                            unselectedLabelColor: Colors.black,
+                            labelStyle: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            tabs: [
+                              Tab(text: 'Overview'),
+                              Tab(text: 'Context'),
+                            ],
                           ),
-                          tabs: [
-                            Tab(text: 'Overview'),
-                            Tab(text: 'Context'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Body
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            _OverviewTab(props: p, scenario: widget.scenario),
+                            _ContextTab(props: p),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Body
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          _OverviewTab(props: p, scenario: widget.scenario),
-                          _ContextTab(props: p),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
       ),
     );
   }
+
   String _locationText(Map<String, dynamic> p) {
     // Prefer a small area label if available, but never prefix with "Barangay"
     String? area = _firstNonBlank(p, [
-      'brgy_name', 'barangay_name', 'barangay',
-      'suburb', 'neighbourhood', 'neighborhood',
-      'district', 'locality', 'village', 'purok', 'sitio',
+      'brgy_name',
+      'barangay_name',
+      'barangay',
+      'suburb',
+      'neighbourhood',
+      'neighborhood',
+      'district',
+      'locality',
+      'village',
+      'purok',
+      'sitio',
     ]);
 
-    String? city = _firstNonBlank(p, ['city', 'municipality', 'town', 'addr:city']);
-    String? prov = _firstNonBlank(p, ['province', 'region', 'state', 'addr:province']);
+    String? city = _firstNonBlank(p, [
+      'city',
+      'municipality',
+      'town',
+      'addr:city',
+    ]);
+    String? prov = _firstNonBlank(p, [
+      'province',
+      'region',
+      'state',
+      'addr:province',
+    ]);
 
     area = _clean(area);
     city = _clean(city);
     prov = _clean(prov);
 
     // Hide NCR/Metro Manila since the city already implies it
-    final isNCR = (prov ?? '').toLowerCase().contains('ncr') ||
-                  (prov ?? '').toLowerCase().contains('national capital region') ||
-                  (prov ?? '').toLowerCase().contains('metro manila') ||
-                  (prov ?? '').toLowerCase().contains('metropolitan manila');
+    final isNCR =
+        (prov ?? '').toLowerCase().contains('ncr') ||
+        (prov ?? '').toLowerCase().contains('national capital region') ||
+        (prov ?? '').toLowerCase().contains('metro manila') ||
+        (prov ?? '').toLowerCase().contains('metropolitan manila');
 
     final parts = <String>[];
-    if (area != null && area != '—') parts.add(area);   // no "Barangay" prefix
-    if (city != null)               parts.add(city);
-    if (prov != null && !isNCR)     parts.add(prov);
+    if (area != null && area != '—') parts.add(area); // no "Barangay" prefix
+    if (city != null) parts.add(city);
+    if (prov != null && !isNCR) parts.add(prov);
 
     return parts.isEmpty ? '—' : parts.join(', ');
   }
@@ -933,7 +974,6 @@ class _ExplainabilityDrawerState extends State<_ExplainabilityDrawer>
     final s = v.toString().trim();
     return s.isEmpty || s == '-' || s == '—' || s.toLowerCase() == 'null';
   }
-
 }
 // ---------- Tabs ----------
 
@@ -958,32 +998,42 @@ class _OverviewTab extends StatelessWidget {
     final summary = _buildSummary(ranked, props, scenario);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.all(24),
       children: [
-        const Text('Top Contributors',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: topTags.map((t) => _TagChip(label: t)).toList(),
+        Text(
+          'Top Contributors',
+          style: GoogleFonts.inter(
+            color: Colors.black87,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        const SizedBox(height: 16),
-
-        const Text('Contribution Weights',
-            style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
         for (final e in ranked)
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
             child: _BarRow(label: e.keyLabel, value: e.value),
           ),
 
         const SizedBox(height: 16),
+        Text(
+          'Summary',
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
         _InfoCard(
           child: Text(
             summary,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF374151),
+              height: 1.7,
+            ),
           ),
         ),
       ],
@@ -1006,19 +1056,23 @@ class _OverviewTab extends StatelessWidget {
       switch (d) {
         case _Driver.lowElevation:
           final hand = (p['HAND_m'] as num?)?.toDouble();
-          return (hand == null) ? 'low relative elevation'
+          return (hand == null)
+              ? 'low relative elevation'
               : 'low relative elevation (HAND ≈ ${hand.toStringAsFixed(1)} m)';
         case _Driver.canalProximity:
           final dist = (p['dist_canal_m'] as num?)?.toDouble();
-          return (dist == null) ? 'proximity to canals'
+          return (dist == null)
+              ? 'proximity to canals'
               : 'proximity to canals (≈ ${dist.toStringAsFixed(0)} m)';
         case _Driver.poorDrainage:
           final dens = (p['drain_density'] as num?)?.toDouble();
-          return (dens == null) ? 'limited drainage capacity'
+          return (dens == null)
+              ? 'limited drainage capacity'
               : 'limited drainage capacity (density ≈ ${dens.toStringAsFixed(1)}/100 m)';
         case _Driver.minimalSlope:
           final slope = (p['slope_pct'] as num?)?.toDouble();
-          return (slope == null) ? 'minimal slope (flat terrain)'
+          return (slope == null)
+              ? 'minimal slope (flat terrain)'
               : 'minimal slope (≈ ${slope.toStringAsFixed(1)}%)';
       }
     }
@@ -1029,25 +1083,32 @@ class _OverviewTab extends StatelessWidget {
 
     final parts = <String>[
       'At $scenario mm/hr, the segment’s risk is driven mainly by '
-          '${top1.keyLabel.toLowerCase()} (${pct(top1.value)}).'
+          '${top1.keyLabel.toLowerCase()} (${pct(top1.value)}).',
     ];
 
     if ((top2?.value ?? 0) >= 0.15) {
-      parts.add('Secondary influence: ${top2!.keyLabel.toLowerCase()} '
-          '(${pct(top2.value)}).');
+      parts.add(
+        'Secondary influence: ${top2!.keyLabel.toLowerCase()} '
+        '(${pct(top2.value)}).',
+      );
     }
     if ((top3?.value ?? 0) >= 0.15) {
-      parts.add('Additional factor: ${top3!.keyLabel.toLowerCase()} '
-          '(${pct(top3.value)}).');
+      parts.add(
+        'Additional factor: ${top3!.keyLabel.toLowerCase()} '
+        '(${pct(top3.value)}).',
+      );
     }
 
     // Add metric context for the top 1–2 drivers
     final contextBits = <String>[metricLine(top1.key)];
-    if (top2 != null && top2.value >= 0.15) contextBits.add(metricLine(top2.key));
+    if (top2 != null && top2.value >= 0.15)
+      contextBits.add(metricLine(top2.key));
 
     parts.add('Context: ${contextBits.join('; ')}.');
 
-      parts.add('This assessment represents initial evaluation as results may exhibit inaccuracies. Reliability expected to improve as models are refined.');
+    parts.add(
+      'This assessment represents initial evaluation as results may exhibit inaccuracies. Reliability expected to improve as models are refined.',
+    );
 
     return parts.join(' ');
   }
@@ -1055,8 +1116,8 @@ class _OverviewTab extends StatelessWidget {
   Map<_Driver, double> _computeWeights(Map<String, dynamic> p) {
     double clamp01(num v) => v.isNaN ? 0 : v.clamp(0, 1).toDouble();
 
-    final hand = (p['HAND_m'] as num?) ?? 1.2;      // meters
-    final slope = (p['slope_pct'] as num?) ?? 0.7;  // %
+    final hand = (p['HAND_m'] as num?) ?? 1.2; // meters
+    final slope = (p['slope_pct'] as num?) ?? 0.7; // %
     final dist = (p['dist_canal_m'] as num?) ?? 60; // meters
     final drains = (p['drain_density'] as num?) ?? 1;
 
@@ -1084,21 +1145,36 @@ class _ContextTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.all(24),
       children: [
-        const Text('Metrics', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(
+          'Metrics',
+          style: GoogleFonts.inter(
+            color: Colors.black87,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
         const SizedBox(height: 8),
-        _KV('Relative elevation (HAND)', '${props['HAND_m'] ?? '—'} m'),
-        _KV('Slope', '${props['slope_pct'] ?? '—'} %'),
-        _KV('Distance to canal', '${props['dist_canal_m'] ?? '—'} m'),
-        _KV('Road class', '${props['road_class'] ?? '—'}'),
-        _KV('Drain density', '${props['drain_density'] ?? '—'} /100 m'),
+        const Divider(height: 1),
         const SizedBox(height: 16),
+        _KVMetrics('Relative elevation (HAND)', '${props['HAND_m'] ?? '—'} m'),
+        _KVMetrics('Slope', '${props['slope_pct'] ?? '—'} %'),
+        _KVMetrics('Distance to canal', '${props['dist_canal_m'] ?? '—'} m'),
+        _KVMetrics('Road class', '${props['road_class'] ?? '—'}'),
+        _KVMetrics('Drain density', '${props['drain_density'] ?? '—'} /100 m'),
+        const SizedBox(height: 32),
         _InfoCard(
-          child: const Text(
+          child: Text(
             'These are indicative factors based on available data. For official '
             'flood risk assessments, consult local authorities.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF374151)),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF374151),
+              height: 1.7,
+            ),
           ),
         ),
       ],
@@ -1128,13 +1204,13 @@ class _MetaCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white70,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            blurRadius: 2,
+            offset: Offset(0, 1),
           ),
         ],
         border: Border.all(color: const Color(0xFFE5E7EB)),
@@ -1151,7 +1227,7 @@ class _MetaCard extends StatelessWidget {
             children: [
               _Pill(
                 label: rainThreshold,
-                color: Colors.black,
+                color: Color(0xFF006EFF),
                 inverted: true,
                 icon: Icons.water_drop,
               ),
@@ -1164,26 +1240,6 @@ class _MetaCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TagChip extends StatelessWidget {
-  final String label;
-  const _TagChip({required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5EEF7),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFDBEAFE)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, color: Color(0xFF1D4ED8)),
       ),
     );
   }
@@ -1207,17 +1263,25 @@ class _BarRow extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                style: GoogleFonts.inter(
+                  color: Color(0xFF6B7280),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               '$pct%',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              style: GoogleFonts.inter(
+                color: Color(0xFF6B7280),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: SizedBox(
@@ -1229,7 +1293,7 @@ class _BarRow extends StatelessWidget {
                 FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: value.clamp(0, 1),
-                  child: Container(color: const Color(0xFFEF4444)),
+                  child: Container(color: const Color(0xFF4582D1)),
                 ),
               ],
             ),
@@ -1246,12 +1310,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: child,
     );
   }
@@ -1288,7 +1347,7 @@ class _Pill extends StatelessWidget {
           ],
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.inter(
               color: fg,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -1313,11 +1372,50 @@ class _KV extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 150,
-            child: Text(k, style: const TextStyle(color: Color(0xFF6B7280))),
+            width: 100,
+            child: Text(k, style: GoogleFonts.inter(color: Color(0xFF6B7280))),
           ),
           Expanded(
-            child: Text(v, style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(
+              v,
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KVMetrics extends StatelessWidget {
+  final String k;
+  final String v;
+  const _KVMetrics(this.k, this.v);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 200,
+            child: Text(
+              k,
+              style: GoogleFonts.inter(
+                color: Color(0xFF6B7280),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          SizedBox(width: 36),
+          Expanded(
+            child: Text(
+              v,
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -1356,22 +1454,6 @@ _RiskBand _riskBand(double risk01) {
   return const _RiskBand('LOW', Color(0xFF22C55E));
 }
 
-class _CauseChip extends StatelessWidget {
-  final String text;
-  const _CauseChip({required this.text});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(text),
-    );
-  }
-}
-
 class _Footer extends StatelessWidget {
   const _Footer();
 
@@ -1390,10 +1472,10 @@ class _Footer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
                     'Disclaimer',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1401,6 +1483,7 @@ class _Footer extends StatelessWidget {
                   SizedBox(height: 4),
                   Text(
                     "Info is provided as-is from early-stage models; may contain errors. Use responsibly; consult LGU/DRRM.",
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                 ],
               ),
@@ -1409,16 +1492,16 @@ class _Footer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
                     'Contact Us',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text('sbafn.team@gmail.com'),
+                  Text('sbafn.team@gmail.com', style: GoogleFonts.inter()),
                 ],
               ),
             ),
